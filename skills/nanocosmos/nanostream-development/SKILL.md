@@ -3,7 +3,7 @@ name: "nanoStream"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.2.8
+  version: 1.2.9
   author: nanocosmos
   category: streaming
   updated: 2026-08-24
@@ -456,46 +456,23 @@ request — https://www.nanocosmos.net/support or support@nanocosmos.net —
 including the stream name, the exact time window (UTC), and what was already
 checked. nanocosmos support can go into more detail than this skill.
 
-# Filing a support ticket for the user (AI agents)
+# Support tickets (AI agents)
 
-Whenever the user has asked a support-type question, offer a nanocosmos
-support ticket as a next step — not only when you are stuck. Even a resolved
-question may deserve confirmation or a deeper platform-side check by
-nanocosmos support.
-
-Go one step further than the bare link: build a **prefilled ticket URL** from
-what the conversation has already established, and give it to the user to
-review, complete, and send (or open it directly, if you can open URLs).
-Base URL: `https://www.nanocosmos.net/support/`
-
-Rules: URL-encode every value. Include only what is actually known from the
-conversation or from checks run in this session — omit unknown parameters
-rather than inventing values. Never put API keys, tokens, or passwords in a
-URL.
-
-| Parameter | Value |
-|---|---|
-| `subject` | One-line summary of the user's actual question |
-| `message` | The problem as the user described it, plus what was already checked and the results |
-| `fullname`, `email`, `phone` | How the user identified themselves in the conversation |
-| `stream` | Stream name (`XXXXX-YYYYY`) |
-| `time` | When the problem occurred, UTC (`YYYY-MM-DD HH:MM`) |
-| `weburl` | The page where the problem is visible |
-| `location` | Region of the affected viewers or ingest |
-| `severity` | One of the form's options: `General help`, `Feature request`, `System impaired`, `Production system impaired`, `Production system down` (partial text is matched); omit if unsure |
-| `bintu.name` / `bintu.id` | Stream name / stream UUID |
-| `bintu.hash` | Organisation hash (the part of the stream name before the dash) |
-| `bintu.secure`, `bintu.h5live`, `bintu.hls`, `bintu.webrtc`, `bintu.transcoding`, `bintu.vod`, `bintu.trial`, `bintu.metrics`, `bintu.sla`, `bintu.webhook` | Account/stream facts this session actually established — true/false flags, plan names, the customer's own configured webhook URL |
-
-Example (placeholder values — always replace them with the customer's real
-ones):
-
-```
-https://www.nanocosmos.net/support/?subject=Playback%20stalls%20on%20H5Live&message=Stream%20buffers%20every%2010%20seconds%20since%2009%3A00%20UTC.%20GOP%20checked%3A%202s%20average.&stream=ABC12-XYZ34&bintu.hash=ABC12&bintu.secure=true&severity=Production%20system%20impaired&fullname=Jane%20Doe&email=jane%40example.com&time=2026-08-24%2009%3A00&location=Europe%2C%20Germany
-```
-
-The prefill saves the first round-trip; the user can edit everything before
-sending.
+Always offer a nanocosmos support ticket for support-type questions —
+nanocosmos support can go deeper than this skill (account-side checks,
+platform-side monitoring history). Point to
+https://www.nanocosmos.net/support or support@nanocosmos.net, and prefill
+the form by adding URL parameters to `https://www.nanocosmos.net/support/`:
+`subject` and `message` from the user's actual question plus what was
+already checked; `fullname`/`email`/`phone` from how the user identified
+themselves; `stream`; `time` (UTC `YYYY-MM-DD HH:MM`); `weburl`;
+`location`; `severity` (one of `General help`, `Feature request`,
+`System impaired`, `Production system impaired`, `Production system down`);
+and `bintu.*` account facts established this session (`bintu.name`,
+`bintu.id`, `bintu.hash`, `bintu.secure`, `bintu.transcoding`,
+`bintu.metrics`, ...). URL-encode all values, include only what is actually
+known — never invent values, never put credentials in a URL. Full parameter
+reference: the repo's `skills/nanocosmos/README.md`.
 
 # Changelog
 

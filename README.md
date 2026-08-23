@@ -65,6 +65,8 @@ files directly.
 - Support requests: https://www.nanocosmos.net/support or
   support@nanocosmos.net (issues in this repo are for mistakes in the
   skills themselves, not a support channel)
+- Skill routing and the prefilled ticket-form parameters (for AI agents):
+  [skills/nanocosmos/README.md](skills/nanocosmos/README.md)
 
 ## License
 
