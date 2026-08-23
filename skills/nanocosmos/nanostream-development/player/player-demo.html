@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>nanoStream Player — Demo Workbench</title>
+<script src="https://demo.nanocosmos.de/nanoplayer/api/release/nanoplayer.5.min.js"></script>
+<style>
+  :root {
+    --dns-bg-page: #0f1216;
+    --dns-bg-page-deep: #0b0d10;
+    --dns-bg-panel: #252a30;
+    --dns-bg-panel-low: #20252a;
+    --dns-bg-sunken: #101216;
+    --dns-bg-control: #151b21;
+
+    --dns-line: #313740;
+    --dns-line-strong: #3a424c;
+    --dns-line-blue: #2e5870;
+
+    --dns-text: #e8edf2;
+    --dns-text-soft: #cbd6de;
+    --dns-muted: #9da6b0;
+    --dns-dim: #737d88;
+
+    --dns-brand-blue: #07587f;
+    --dns-brand-blue-dark: #043c5b;
+    --dns-status-blue: #1f9bd1;
+
+    --dns-action-orange: #ff821f;
+    --dns-action-orange-hi: #ff9d43;
+    --dns-action-orange-low: #ea6a10;
+
+    --dns-ok: #44c767;
+    --dns-warn: #ffc15a;
+    --dns-error: #ff6b5f;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    background:
+      linear-gradient(180deg, rgba(8, 72, 105, 0.16) 0, rgba(8, 72, 105, 0) 180px) fixed,
+      linear-gradient(135deg, #13171b 0%, #0f1216 54%, #0b0d10 100%) fixed;
+    color: var(--dns-text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Header ---------- */
+  .app-header {
+    background:
+      linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.12) 44%, transparent 58%),
+      linear-gradient(180deg, #0c6f9e 0%, #07587f 46%, #043c5b 100%);
+    border-bottom: 2px solid var(--dns-action-orange);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      0 12px 36px rgba(2,20,28,0.48);
+    padding: 12px 0;
+  }
+  .header-inner {
+    width: min(calc(100% - 96px), 1520px);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .brand-logo span { color: var(--dns-action-orange); }
+  .brand-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.72);
+    margin-top: 2px;
+  }
+  .mode-pill {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    background: rgba(4,28,40,0.5);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px;
+    padding: 6px 12px;
+  }
+
+  /* ---------- Layout ---------- */
+  .workbench {
+    width: min(calc(100% - 96px), 1520px);
+    margin: 18px auto 30px;
+  }
+  .workbench-layout {
+    display: grid;
+    grid-template-columns: minmax(720px, 1fr) minmax(390px, 440px);
+    gap: 18px;
+    align-items: start;
+  }
+  .preview-col { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ---------- Section headers ---------- */
+  .col-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 2px;
+  }
+  .panel-title {
+    font-size: 20px;
+    line-height: 1.2;
+    color: #fff;
+    margin: 0;
+  }
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dns-action-orange);
+    margin: 0 0 3px;
+  }
+
+  /* ---------- Panels ---------- */
+  .dns-panel {
+    background: linear-gradient(180deg, #252a30 0%, #20252a 100%);
+    border: 1px solid #343b45;
+    border-radius: 9px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.055),
+      inset 0 -1px 0 rgba(0,0,0,0.36),
+      0 22px 64px rgba(0,0,0,0.36);
+  }
+  .preview-panel { padding: 12px; }
+
+  /* ---------- Monitor ---------- */
+  .monitor {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #050607;
+    border: 1px solid #08090b;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,0.62),
+      inset 0 0 0 1px rgba(255,255,255,0.04),
+      0 12px 30px rgba(0,0,0,0.24);
+  }
+  #playerDiv { position: absolute; inset: 0; }
+  .monitor-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    color: var(--dns-dim);
+    pointer-events: none;
+  }
+  .monitor-placeholder .ph-title {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--dns-muted);
+  }
+  .monitor-placeholder .ph-sub { font-size: 11px; }
+
+  /* ---------- Status strip ---------- */
+  .status-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #cbd6de;
+    background: rgba(4,42,61,0.54);
+    border: 1px solid #2e5870;
+    border-left: 3px solid var(--dns-status-blue);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--dns-dim);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+    flex: none;
+  }
+  .status-dot.live { background: var(--dns-ok); box-shadow: 0 0 8px rgba(68,199,103,0.6); }
+  .status-dot.warn { background: var(--dns-warn); }
+  .status-dot.error { background: var(--dns-error); box-shadow: 0 0 8px rgba(255,107,95,0.5); }
+  .status-label { font-weight: 700; letter-spacing: 0.04em; }
+  .status-stats { margin-left: auto; display: flex; gap: 16px; color: var(--dns-muted); }
+  .status-stats b { color: var(--dns-text-soft); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* ---------- Control rail ---------- */
+  .control-rail {
+    background: linear-gradient(180deg, #252a30 0%, #20252a 100%);
+    border: 1px solid #343b45;
+    border-top: 2px solid var(--dns-line-blue);
+    border-radius: 9px;
+    padding: 18px;
+  }
+  .control-section {
+    border-top: 1px solid #303842;
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .control-section:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    margin: 0 0 12px;
+  }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--dns-muted);
+    margin-bottom: 5px;
+  }
+  input, select {
+    width: 100%;
+    color: var(--dns-text);
+    font-family: inherit;
+    font-size: 13px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0)),
+      #151c23;
+    border: 1px solid #313740;
+    border-left: 3px solid var(--dns-action-orange);
+    border-radius: 6px;
+    padding: 9px 10px;
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,0.34),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--dns-action-orange);
+    box-shadow: 0 0 0 2px rgba(255,130,31,0.28), inset 0 1px 2px rgba(0,0,0,0.34);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .help-text { font-size: 12px; line-height: 1.45; color: var(--dns-muted); margin: 8px 0 0; }
+  .help-text code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    color: var(--dns-text-soft);
+    background: #151c23;
+    border: 1px solid #2a3038;
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* ---------- Toggles ---------- */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0;
+    font-size: 13px; color: var(--dns-text-soft);
+  }
+  .toggle-row + .toggle-row { border-top: 1px solid #2a3038; }
+  .switch { position: relative; width: 38px; height: 21px; flex: none; }
+  .switch input { display: none; }
+  .switch .track {
+    position: absolute; inset: 0;
+    background: #151c23; border: 1px solid #313740;
+    border-radius: 11px; transition: all .15s;
+  }
+  .switch .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--dns-dim); transition: all .15s;
+  }
+  .switch input:checked + .track { background: rgba(255,130,31,0.22); border-color: var(--dns-action-orange); }
+  .switch input:checked + .track + .knob,
+  .switch input:checked ~ .knob { background: var(--dns-action-orange); transform: translateX(17px); }
+
+  /* ---------- Action strip ---------- */
+  .action-strip { display: flex; gap: 10px; margin-top: 18px; }
+  .btn {
+    flex: 1;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 11px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: filter .12s, transform .04s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(180deg, #ff9d43 0%, #ff821f 52%, #ea6a10 100%);
+    border: 1px solid #ff821f;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 8px 18px rgba(0,0,0,0.18);
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-secondary {
+    color: #e8edf2;
+    background: linear-gradient(180deg, #303740 0%, #222831 100%);
+    border: 1px solid #4a515b;
+  }
+  .btn-secondary:hover { filter: brightness(1.12); }
+
+  /* ---------- Footer / version stamp ---------- */
+  .app-footer {
+    width: min(calc(100% - 96px), 1520px);
+    margin: 24px auto 18px;
+    padding-top: 14px;
+    border-top: 1px solid #20262d;
+    color: var(--dns-dim);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .app-footer a { color: var(--dns-muted); text-decoration: none; }
+  .app-footer a:hover { color: var(--dns-text-soft); }
+  .page-version {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1080px) {
+    .header-inner, .workbench { width: calc(100% - 32px); }
+    .workbench-layout { grid-template-columns: 1fr; }
+    .mode-pill { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div>
+          <div class="brand-logo">nano<span>cosmos</span></div>
+          <div class="brand-eyebrow">nanoStream</div>
+        </div>
+      </div>
+      <div class="mode-pill" id="enginePill">nanoStream — Player Workbench</div>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <div class="workbench-layout">
+
+      <!-- Preview / Monitor -->
+      <section class="preview-col">
+        <div class="col-head">
+          <div>
+            <p class="eyebrow">Live Output</p>
+            <h1 class="panel-title">Player Monitor</h1>
+          </div>
+        </div>
+
+        <div class="dns-panel preview-panel">
+          <div class="monitor">
+            <div id="playerDiv"></div>
+            <div class="monitor-placeholder" id="placeholder">
+              <div class="ph-title">No signal</div>
+              <div class="ph-sub">Enter a stream name and press Load Stream</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-strip">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Idle</span>
+          <span class="status-stats">
+            <span>Latency <b id="statLatency">—</b></span>
+            <span>Bitrate <b id="statBitrate">—</b></span>
+            <span>Buffer <b id="statBuffer">—</b></span>
+          </span>
+        </div>
+      </section>
+
+      <!-- Control Rail -->
+      <aside class="control-rail">
+        <div class="control-section">
+          <p class="section-label">Stream Source</p>
+          <div class="field">
+            <label for="streamName">Stream Name or Group ID</label>
+            <input id="streamName" type="text" value="HX26g-YVe8D" spellcheck="false" />
+            <p class="help-text">Stream name <code>XXXXX-YYYYY</code> or an ABR group ID (UUID)</p>
+          </div>
+          <div class="field">
+            <label for="serverDomain">Play Server Domain</label>
+            <input id="serverDomain" type="text" value="bintu-play.nanocosmos.de" spellcheck="false" />
+          </div>
+          <div class="field">
+            <label for="jwtoken">JWT Token <span style="color:var(--dns-dim);font-weight:400;text-transform:none;letter-spacing:0">— optional</span></label>
+            <input id="jwtoken" type="text" value="" placeholder="leave empty for public playback" spellcheck="false" />
+            <p class="help-text">Paste a token (JWT) to enable secure playback</p>
+          </div>
+        </div>
+
+        <div class="control-section">
+          <p class="section-label">Playback Mode</p>
+          <div class="field">
+            <label for="latencyMode">Latency Control Mode</label>
+            <select id="latencyMode">
+              <option value="fastadaptive">fastadaptive — tracks the live edge most aggressively</option>
+              <option value="balancedadaptive" selected>balancedadaptive — low latency, smoother (default)</option>
+              <option value="classic">classic — buffer-based, most stable</option>
+            </select>
+            <p class="help-text">All modes target low latency — this only sets how tightly the player holds to the live edge vs. playback smoothness. Not an absolute latency value.</p>
+          </div>
+          <div class="toggle-row">
+            <span>Fast start</span>
+            <label class="switch"><input type="checkbox" id="optFaststart" checked /><span class="track"></span><span class="knob"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>Media over QUIC (MOQ)</span>
+            <label class="switch"><input type="checkbox" id="optMoq" checked /><span class="track"></span><span class="knob"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>Autoplay (muted)</span>
+            <label class="switch"><input type="checkbox" id="optAutoplay" checked /><span class="track"></span><span class="knob"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>Show player controls</span>
+            <label class="switch"><input type="checkbox" id="optControls" checked /><span class="track"></span><span class="knob"></span></label>
+          </div>
+        </div>
+
+        <div class="control-section">
+          <p class="section-label">Notes</p>
+          <p class="help-text">Uses nanoStream Player 5 API. </p>
+        </div>
+
+        <div class="action-strip">
+          <button class="btn btn-secondary" id="btnUnload">Stop</button>
+          <button class="btn btn-secondary" id="btnPause">Pause</button>
+          <button class="btn btn-primary" id="btnLoad">Load Stream</button>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <span>&copy; nanocosmos GmbH</span>
+    <div class="page-version" aria-label="Page version">
+      <span>v<!-- version -->1.0.0<!-- /version --></span>
+      <span aria-hidden="true">·</span>
+      <span>Updated <!-- updated -->2026-06-05<!-- /updated --></span>
+    </div>
+  </footer>
+
+<script>
+(function () {
+  var player = null;
+
+  var dot = document.getElementById('statusDot');
+  var label = document.getElementById('statusLabel');
+  var placeholder = document.getElementById('placeholder');
+  var enginePill = document.getElementById('enginePill');
+
+  function setStatus(state, text) {
+    dot.className = 'status-dot' + (state ? ' ' + state : '');
+    label.textContent = text;
+  }
+
+  function buildConfig() {
+    // Value is the API latencyControlMode literal: "fastadaptive" | "balancedadaptive" | "classic".
+    var latencyControlMode = document.getElementById('latencyMode').value;
+
+    var input = document.getElementById('streamName').value.trim();
+
+    // Auto-detect security: any non-empty JWT enables token-secure playback.
+    var jwt = document.getElementById('jwtoken').value.trim();
+    var security = jwt ? { jwtoken: jwt } : {};
+
+    // Base source — defaults/general stay regardless of source type (matches reference player.html).
+    var source = {
+      defaults: { service: 'bintu' },
+      general: { serverDomain: document.getElementById('serverDomain').value.trim() },
+      // adaption.rule controls how aggressively the player switches ABR renditions
+      // (deviationOfMean | deviationOfMean2 | none) — it is NOT an ABR on/off switch.
+      options: { switch: { timeout: 10 }, adaption: { rule: 'deviationOfMean2' } },
+      startIndex: 0
+    };
+
+    // Auto-detect source type: a UUID is a stream ID / ABR group ID, otherwise a stream name.
+    var isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+    if (isId) {
+      // Stream ID or group ID — resolved via the bintu API.
+      source.group = { id: input, apiurl: 'https://bintu.nanocosmos.de', security: security };
+    } else {
+      // Stream name like XXXXX-YYYYY — played from the h5live edge.
+      source.entries = [{ h5live: { rtmp: { streamname: input }, security: security } }];
+    }
+
+    return {
+      source: source,
+      playback: {
+        autoplay: document.getElementById('optAutoplay').checked,
+        automute: true,
+        muted: true,
+        enableMediaOverQuic: document.getElementById('optMoq').checked,
+        faststart: document.getElementById('optFaststart').checked,
+        metadata: true,
+        latencyControlMode: latencyControlMode
+      },
+      style: {
+        scaling: 'fill',
+        width: '100%',
+        height: '100%',
+        controls: document.getElementById('optControls').checked,
+        interactive: document.getElementById('optControls').checked,
+        view: true,
+        displayMutedAutoplay: true
+      },
+      events: {
+        onReady: function () { setStatus('warn', 'Connecting…'); },
+        onPlay: function () {
+          placeholder.style.display = 'none';
+          setStatus('live', 'Live');
+          setPauseBtn(true);
+        },
+        onPause: function () { setStatus('warn', 'Paused'); setPauseBtn(false); },
+        onError: function (e) {
+          var d = e && e.data;
+          var msg = d && (d.message || d.code || (d.error && (d.error.message || d.error.code)));
+          setStatus('error', 'Error: ' + (msg || 'playback failed'));
+          setPauseBtn(false);
+        },
+        onStreamInfo: function () { placeholder.style.display = 'none'; setStatus('warn', 'Stream found — buffering'); },
+        onStreamInfoError: function () {
+          setStatus('error', 'Stream not found or offline: ' + document.getElementById('streamName').value.trim());
+        },
+        onStats: function (e) { updateStats(e && e.data && e.data.stats); }
+      }
+    };
+  }
+
+  // Defensive: nanoPlayer stats field names vary; read what's present, fall back to —.
+  function pick(obj, keys) {
+    if (!obj) return null;
+    for (var i = 0; i < keys.length; i++) {
+      if (obj[keys[i]] != null && !isNaN(obj[keys[i]])) return Number(obj[keys[i]]);
+    }
+    return null;
+  }
+  function updateStats(s) {
+    var lat = pick(s, ['latency', 'latencyVideo', 'currentLatency']);
+    var br = pick(s, ['bitrate', 'playoutBitrate', 'videoBitrate', 'qosBitrateRendered']);
+    var buf = pick(s, ['buffer', 'bufferDelay', 'bufferLength']);
+    document.getElementById('statLatency').textContent = lat != null ? lat.toFixed(2) + ' s' : '—';
+    document.getElementById('statBitrate').textContent = br != null ? Math.round(br) + ' kbps' : '—';
+    document.getElementById('statBuffer').textContent = buf != null ? buf.toFixed(2) + ' s' : '—';
+  }
+  function resetStats() {
+    document.getElementById('statLatency').textContent = '—';
+    document.getElementById('statBitrate').textContent = '—';
+    document.getElementById('statBuffer').textContent = '—';
+  }
+
+  function load() {
+    if (typeof NanoPlayer === 'undefined') {
+      setStatus('error', 'Player API not loaded (offline?)');
+      return;
+    }
+    if (!document.getElementById('streamName').value.trim()) {
+      setStatus('error', 'Enter a stream name or group ID first.');
+      return;
+    }
+    unload();
+    setStatus('warn', 'Initializing…');
+    player = new NanoPlayer('playerDiv');
+    var mode = document.getElementById('latencyMode').value;
+    var input = document.getElementById('streamName').value.trim();
+    var isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+    var secLabel = document.getElementById('jwtoken').value.trim() ? ' · JWT' : '';
+    enginePill.textContent = 'nanoStream — ' + mode +
+      (isId ? ' · ID' : '') + secLabel;
+    player.setup(buildConfig()).then(function () {
+      setStatus('warn', 'Ready');
+    }).catch(function (e) {
+      setStatus('error', 'Setup failed: ' + (e && e.message ? e.message : 'unknown'));
+    });
+  }
+
+  function unload() {
+    resetStats();
+    if (player && player.destroy) { try { player.destroy(); } catch (e) {} }
+    player = null;
+    placeholder.style.display = 'flex';
+    setStatus('', 'Idle');
+    enginePill.textContent = 'nanoStream — Player Workbench';
+    setPauseBtn(false);
+  }
+
+  // Pause / resume toggle.
+  var isPlaying = false;
+  var btnPause = document.getElementById('btnPause');
+  function setPauseBtn(playing) {
+    isPlaying = playing;
+    btnPause.textContent = playing ? 'Pause' : 'Resume';
+  }
+  function togglePause() {
+    if (!player) return;
+    try {
+      if (isPlaying) { player.pause(); } else { player.play(); }
+    } catch (e) {}
+  }
+  btnPause.addEventListener('click', togglePause);
+
+  document.getElementById('btnLoad').addEventListener('click', load);
+  document.getElementById('btnUnload').addEventListener('click', unload);
+
+  // Restart the player when a config-time switch/select changes (only if already loaded).
+  ['optAutoplay', 'optFaststart', 'optMoq', 'optControls', 'latencyMode'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () {
+      if (player) load();
+    });
+  });
+
+  // Prefill from URL params:  ?stream=XXXXX-YYYYY | ?stream=<uuid> | ?token=... (alias ?jwtoken=) | ?server=...
+  function applyUrlParams() {
+    var p = new URLSearchParams(window.location.search);
+    var stream = p.get('stream');
+    var token = p.get('token') || p.get('jwtoken');
+    var server = p.get('server');
+    if (stream) document.getElementById('streamName').value = stream;
+    if (token) document.getElementById('jwtoken').value = token;
+    if (server) document.getElementById('serverDomain').value = server;
+  }
+
+  // Apply params, then auto-load on open.
+  function init() { applyUrlParams(); load(); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

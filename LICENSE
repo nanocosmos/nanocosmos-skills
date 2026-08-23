@@ -1,0 +1,57 @@
+nanocosmos Skills License
+(proprietary — for use by nanocosmos customers only)
+
+Copyright (c) 2026 nanocosmos GmbH, Berlin. All rights reserved.
+
+The materials in this repository (skills, scripts, reference documentation,
+page templates, and examples — the "Materials") are part of the nanocosmos /
+nanoStream product offering. They are licensed, not sold, and they are NOT
+open source.
+
+1. License grant. Subject to the terms below, nanocosmos grants you a
+   limited, non-exclusive, non-transferable, revocable license to use,
+   reproduce, and modify the Materials solely (a) in connection with
+   nanocosmos products and services, and (b) for as long as you hold a valid
+   nanocosmos account or commercial agreement governed by the nanocosmos
+   Terms of Service (https://www.nanocosmos.net/terms) — including trial
+   accounts, for the duration of the trial.
+
+2. Permitted without an account. Viewing and evaluating the contents of this
+   public repository is permitted.
+
+3. Restrictions. Except as expressly permitted above, you may not
+   (a) redistribute, publish, sublicense, sell, or otherwise make the
+   Materials or modified versions of them available to any third party;
+   (b) use the Materials to build, train, or operate a product or service
+   that competes with nanocosmos products or services;
+   (c) remove or alter copyright, license, or attribution notices.
+
+4. Relationship to the product terms. Use of nanocosmos products and
+   services themselves remains governed by the nanocosmos Terms of Service
+   and your commercial agreement. Nothing in this license grants any right
+   to the products or services, to API access, or to any credential.
+
+5. Trademarks. No trademark rights are granted — see TRADEMARK.md.
+
+6. Feedback. If you submit feedback, bug reports, or proposed changes, you
+   grant nanocosmos a perpetual, irrevocable, worldwide, royalty-free right
+   to use, modify, and incorporate them without restriction or attribution.
+
+7. No warranty. THE MATERIALS ARE PROVIDED "AS IS" AND "AS AVAILABLE",
+   WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WITHOUT
+   LIMITATION WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE, AND NON-INFRINGEMENT.
+
+8. Limitation of liability. To the maximum extent permitted by applicable
+   law, nanocosmos shall not be liable for any indirect, incidental,
+   special, consequential, or exemplary damages arising out of or in
+   connection with the Materials or this license.
+
+9. Termination. This license terminates automatically if you breach it, or
+   when your nanocosmos account or agreement ends. Upon termination you must
+   stop using the Materials and delete modified copies.
+
+10. Governing law and venue. This license is governed by the laws of the
+    Federal Republic of Germany; exclusive venue is Berlin.
+
+Contact: https://www.nanocosmos.net/contact

@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+  <head>
+    <title>nanoStream Player test</title>
+    <script src="https://demo.nanocosmos.de/nanoplayer/api/release/nanoplayer.5.min.js"></script>
+    <style>
+      .player-wrapper {
+        width: 50%;
+        max-width: 1280px;
+        aspect-ratio: 16 / 9;
+        position: relative;
+      }
+      #nanocosmos-video-player {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+    </style>
+
+  </head>
+  <body>
+      <div class="player-wrapper">
+        <div id="nanocosmos-video-player"></div>
+      </div>
+      <script>
+      // Note: Defaults values have been omitted for concise code
+      //  playback: {
+      // -          faststart: true,
+      // -          autoplay: true,
+      // -          automute: true,
+      // -          latencyControlMode: "balancedadaptive",
+      //          },
+      // - adaption: { rule: "deviationOfMean2" },
+      // - method: "server", pauseOnError: false, forcePlay: true, fastStart: true
+
+
+      // Note: layout
+      // Our recommendation is to have `view` set to true, disable `controls` and `centerView` (set to false) but if `view` is preferred to be false, then we would recommend adding this helper function for this exact desired layout
+      // helper function for canvas
+      function adjustSize(videoInfo) {    
+        if (videoInfo && activeVideoElement && activeVideoElement.tagName === "CANVAS") {
+            var ratio = videoInfo.width / videoInfo.height;
+            //activeVideoElement.style.width = Math.round(activeVideoElement.offsetHeight * ratio) + "px";
+        }
+    }
+
+      // URL params:
+      //   ?stream=XXXXX-YYYYY      → stream name
+      //   ?stream=<uuid>           → single stream ID or group ID (auto-detected)
+      //   ?token=...             → token-secure playback
+      const params = new URLSearchParams(window.location.search);
+      const streamParam = params.get("stream") || "CD6oL-2kE1g";
+      const jwtoken = params.get("token") || params.get("jwtoken") || "";
+
+      const playDomain = "bintu-play.nanocosmos.de";
+      const apiUrl = "https://bintu.nanocosmos.de";
+      const metricsDomain = null;;
+      const security = jwtoken ? { jwtoken } : {};
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isId = UUID_RE.test(streamParam);
+
+      let activeVideoElement = null; // "video" or "canvas"
+
+      const source = {
+        defaults: { service: "bintu" },
+        general: { serverDomain: playDomain },
+        options: {
+          switch: { timeout: 10 },
+          adaption: { rule: "deviationOfMean2" },
+        },
+        startIndex: 0,
+      };
+
+      if (isId) {
+        // stream ID or group ID — resolved via the bintu API
+        source.group = { id: streamParam, apiurl: apiUrl, security };
+      } else {
+        // stream name like XXXXX-YYYYY — played directly from the h5live edge
+        source.entries = [{ h5live: { rtmp: { streamname: streamParam }, security } }];
+      }
+
+      const playerConfig = {
+        source,
+        // metrics: add your own nanoStream Analytics account here
+        // (accountId/accountKey from your dashboard) to collect playback stats:
+        // metrics: { accountId: "...", accountKey: "..." },
+        playback: {
+      	  enableMediaOverQuic: true,
+          faststart: true,
+          metadata: true,
+          muted: true,
+          autoplay: true,
+          automute: true,
+          latencyControlMode: "balancedadaptive",
+        },
+        style: {
+          scaling: "fill",
+          controls: false,
+          interactive: false,
+          view: false,
+          displayMutedAutoplay: false,
+          width: "100%",
+          height: "100%",
+        },
+        events: {
+          onReady: (e) => console.log("onReady", e),
+          onMute: (e) => console.log("onMute", e),
+          onUnmute: (e) => console.log("onUnmute", e),
+          onStreamInfo: (e) => {
+            console.log("onStreamInfo", e);
+            adjustSize(e.data.streamInfo.videoInfo);
+          },
+          onActiveVideoElementChange: (e) => {
+            console.log("onActiveVideoElementChange", e);
+            activeVideoElement = e.data.activeVideoElement;
+          },
+          onSwitchStreamSuccess: (e) => console.log("onSwitchStreamSuccess", e),
+          onUpdateSourceInit: (e) => console.log("onUpdateSourceInit", e),
+          onUpdateSourceSuccess: (e) => console.log("onUpdateSourceSuccess", e),
+          onSwitchStreamFail: (e) => console.log("onSwitchStreamFail", e),
+          onPlay: (e) => console.log("onPlay", e),
+          onPause: (e) => console.log("onPause", e),
+          //onStats: e => console.log("onStats", e),
+          //onMetaData: e => console.log("onMetaData", e),
+        },
+      };
+      const initVideoPlayer = async () => {
+        const nanoPlayer = new NanoPlayer("nanocosmos-video-player");
+        try {
+          console.log("Setup started, config:", playerConfig);
+          const completedConfig = await nanoPlayer.setup(playerConfig);
+          console.log("Setup completed, config:", completedConfig);
+        } catch (e) {
+          console.error("Setup error:", e);
+        }
+      };
+      window.onload = () => {
+        initVideoPlayer();
+      };
+    </script>
+
+      
+  </body>
+</html>

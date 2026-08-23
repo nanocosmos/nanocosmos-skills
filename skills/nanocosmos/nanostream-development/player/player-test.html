@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>nanoStream Player tests</title>
+</head>
+<body>
+  <!-- The JWTs below are playback tokens and may be expired (low risk, unlike
+       API keys). Check the exp claim before use; mint a fresh token if needed. -->
+  <h2>player.html — minimal reference</h2>
+  <ul>
+    <li><a href="player.html?stream=HX26g-YVe8D">play (stream name)</a>
+    <li><a href="player.html?stream=b6638d50-3581-4349-8fb2-59b3406c2dde">play (group/stream ID)</a>
+    <li><a href="player.html?stream=b6638d50-3581-4349-8fb2-59b3406c2dde&jwtoken=eyJhbGciOiJFZERTQSIsImtpZCI6Im5hbm9feDI1NTE5IiwidHlwIjoiSldUIn0.eyJhdWQiOiJzcGxheSIsImV4cCI6MTc4MDY3OTcxNCwiZm9yY2VEaXNjb25uZWN0IjpmYWxzZSwiaWF0IjoxNzgwNTkzNjE0LCJpc3MiOiJuYW5vY29zbW9zIiwianRpIjoiWjhJbk8zRUEiLCJuYmYiOjE3ODA1OTM2MTQsIm9yZ2FoYXNoIjoibk5DY2YiLCJyZXZvY2FibGUiOnRydWUsInN1YiI6IjU4ODYyNTFjLTJmM2UtNGQ3YS1hYWQ4LWQ3YWU1ZDBhNTdhMCIsInRhZyI6Im5hbm9zdHJlYW0tY2xvdWQtZGFzaGJvYXJkLXBsYXllci10b2tlbiJ9.tIzVOOsLFLrgfIzhDisqiOWIQAUnWdfiTZ2GCzPPZU0qaR5j19Jc9FvFXZcg1fqzv6qCkQLeSfrbKUZKKYbbDw">play with token (group + JWT)</a>
+  </ul>
+
+  <h2>player-demo.html — styled workbench</h2>
+  <ul>
+    <li><a href="player-demo.html?stream=HX26g-YVe8D">play (stream name)</a>
+    <li><a href="player-demo.html?stream=b6638d50-3581-4349-8fb2-59b3406c2dde">play (group/stream ID)</a>
+    <li><a href="player-demo.html?stream=b6638d50-3581-4349-8fb2-59b3406c2dde&jwtoken=eyJhbGciOiJFZERTQSIsImtpZCI6Im5hbm9feDI1NTE5IiwidHlwIjoiSldUIn0.eyJhdWQiOiJzcGxheSIsImV4cCI6MTc4MDY3OTcxNCwiZm9yY2VEaXNjb25uZWN0IjpmYWxzZSwiaWF0IjoxNzgwNTkzNjE0LCJpc3MiOiJuYW5vY29zbW9zIiwianRpIjoiWjhJbk8zRUEiLCJuYmYiOjE3ODA1OTM2MTQsIm9yZ2FoYXNoIjoibk5DY2YiLCJyZXZvY2FibGUiOnRydWUsInN1YiI6IjU4ODYyNTFjLTJmM2UtNGQ3YS1hYWQ4LWQ3YWU1ZDBhNTdhMCIsInRhZyI6Im5hbm9zdHJlYW0tY2xvdWQtZGFzaGJvYXJkLXBsYXllci10b2tlbiJ9.tIzVOOsLFLrgfIzhDisqiOWIQAUnWdfiTZ2GCzPPZU0qaR5j19Jc9FvFXZcg1fqzv6qCkQLeSfrbKUZKKYbbDw">play with token (group + JWT)</a>
+  </ul>
+</body>
+</html>
