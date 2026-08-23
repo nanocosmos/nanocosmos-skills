@@ -8,6 +8,16 @@ your AI coding assistant (Claude Code, Cursor, and similar) so it answers
 platform questions with verified, documentation-backed knowledge instead of
 guesses.
 
+> **Public repository, public audience.** These skills are made for
+> nanocosmos customers and evaluating users, and this repo contains no
+> internal-only nanocosmos information — it covers self-serve diagnostics
+> and integration knowledge. They are at an early stage, a work in
+> progress, and updated frequently. For full support, open a support
+> request with nanocosmos at https://www.nanocosmos.net/support or
+> support@nanocosmos.net: the nanocosmos support engineers can go into more
+> detail than these public skills can (account-side checks, platform-side
+> monitoring history, log analysis).
+
 > **Generated repository.** This content is generated from nanocosmos's
 > internal knowledge base. Don't edit files here — corrections land in the
 > source and are re-released. Found a mistake? Open an issue.
@@ -52,8 +62,9 @@ files directly.
 ## Support
 
 - Product documentation: https://docs.nanocosmos.net
-- Support requests: https://www.nanocosmos.net/support (issues in this repo
-  are for mistakes in the skills themselves, not a support channel)
+- Support requests: https://www.nanocosmos.net/support or
+  support@nanocosmos.net (issues in this repo are for mistakes in the
+  skills themselves, not a support channel)
 
 ## License
 
