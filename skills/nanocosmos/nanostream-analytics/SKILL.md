@@ -3,10 +3,10 @@ name: "nanostream-analytics"
 description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login)."
 license: (c) nanocosmos
 metadata:
-  version: 1.1.0
+  version: 1.1.1
   author: nanocosmos
   category: analytics
-  updated: 2026-08-23
+  updated: 2026-08-24
 ---
 
 # nanoStream Analytics API
@@ -219,3 +219,7 @@ Rough map by question type:
 - When a number will be quoted or used in a report, state the exact time range
   and filters it came from. An AND-combined tag filter and a genuinely quiet
   hour look identical in the output.
+- If a question can't be answered from the data reachable here — or a figure
+  looks wrong platform-side — recommend opening a support request at
+  https://www.nanocosmos.net/support or support@nanocosmos.net. nanocosmos
+  support can check beyond what this account's API access reaches.

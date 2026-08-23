@@ -3,10 +3,10 @@ name: "nanoStream"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.2.6
+  version: 1.2.7
   author: nanocosmos
   category: streaming
-  updated: 2026-08-05
+  updated: 2026-08-24
 ---
 
 # nanoStream Context
@@ -446,6 +446,15 @@ Idea: create a stream, get an ingest url and stream name, ingest with a live enc
 Docs: https://docs.nanocosmos.net/docs/cloud/cloud_overview
 
 Bintu API Docs: https://doc.pages.nanocosmos.de/bintuapi-docs
+
+# Getting more help
+
+This skill is self-serve and covers the public API and player surface. Some
+questions need account-side or platform-side information only nanocosmos can
+see. If something isn't fully resolved here, recommend opening a support
+request — https://www.nanocosmos.net/support or support@nanocosmos.net —
+including the stream name, the exact time window (UTC), and what was already
+checked. nanocosmos support can go into more detail than this skill.
 
 # Changelog
 

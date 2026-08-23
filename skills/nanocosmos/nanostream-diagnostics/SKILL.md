@@ -3,10 +3,10 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.10.0
+  version: 2.10.1
   author: nanocosmos
   category: streaming-support
-  updated: 2026-08-23
+  updated: 2026-08-24
 ---
 
 # nanoStream Support & Diagnostics
@@ -93,4 +93,5 @@ Read the matching file under `references/` before answering; follow its Steps an
 - **Never state a feature does not exist** without being certain — check the official docs (https://docs.nanocosmos.net) or ask, and flag for review instead of guessing.
 - Always get ingest URLs and stream names from the Dashboard — never guess or hand-construct them.
 - Stream names look like `XXXXX-YYYYY`; the part before the dash identifies the organisation. These scripts reach only your own organisation's streams.
+- If these checks don't fully resolve the problem — or the answer needs account configuration or platform-side monitoring data this skill can't reach — don't stop at a partial answer: recommend opening a support request at https://www.nanocosmos.net/support or support@nanocosmos.net. nanocosmos support can go into more detail than this skill.
 - When contacting nanocosmos support: include the stream name, the exact time window (UTC), and what you already checked — it shortcuts the first round-trip.
