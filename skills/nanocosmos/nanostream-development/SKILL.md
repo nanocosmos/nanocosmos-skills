@@ -3,7 +3,7 @@ name: "nanostream-development"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.2.9
+  version: 1.2.10
   author: nanocosmos
   category: streaming
   updated: 2026-08-24

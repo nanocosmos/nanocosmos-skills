@@ -26,8 +26,11 @@ publication:
 Both technical skills now follow the unified two-tier source layout
 (2026-08-23): admin content lives in the source repo's `internal/` folders
 (never shipped) and in `<!-- internal -->` blocks (stripped at build).
-- nanostream: `env=stage`/`env=dev` multiplayer switch (team call pending),
-  placeholder metrics credentials in player.html.
+- nanostream: `env=stage`/`env=dev` multiplayer switch — DECIDED (OL,
+  2026-08-24): non-production environments are internal-only, never
+  advertised to customers (customers always use production unless
+  nanocosmos instructs otherwise); marker-wrapped internal at source.
+  Also removed: placeholder metrics credentials in player.html.
 - nanostream-diagnostics: admin-stream-diagnostics.md, the admin cross-org
   chain in player-config-reference.md, all `internal/` handoffs (rewritten
   to "contact support"), internal blocks (except slow-stream-start's GOP
@@ -51,6 +54,12 @@ Both technical skills now follow the unified two-tier source layout
   "API actually serves ~200" framing was removed).
 
 ## Layout note
+`.claude-plugin/` makes the repo a Claude Code plugin + single-plugin
+marketplace (`claude plugin install nanocosmos@nanocosmos`, skills invoked
+as `nanocosmos:<skill>`) — see the private repo's PUBLISHING.md §2.1 for
+the verified mechanics. plugin.json has no `version` on purpose (updates
+pin to the commit SHA).
+
 Skills are organized under `skills/nanocosmos/<name>/` for repo browsing.
 `install.sh` FLATTENS on install (each skill → `<skills-root>/<name>/`)
 because Claude Code discovers skills only directly under the skills root,
