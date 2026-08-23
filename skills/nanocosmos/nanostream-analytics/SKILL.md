@@ -250,7 +250,7 @@ URL.
 | `time` | When the problem occurred, UTC (`YYYY-MM-DD HH:MM`) |
 | `weburl` | The page where the problem is visible |
 | `location` | Region of the affected viewers or ingest |
-| `severity` | The support form's severity wording (e.g. `Production system impaired`); omit if unsure |
+| `severity` | One of the form's options: `General help`, `Feature request`, `System impaired`, `Production system impaired`, `Production system down` (partial text is matched); omit if unsure |
 | `bintu.name` / `bintu.id` | Stream name / stream UUID |
 | `bintu.hash` | Organisation hash (the part of the stream name before the dash) |
 | `bintu.secure`, `bintu.h5live`, `bintu.hls`, `bintu.webrtc`, `bintu.transcoding`, `bintu.vod`, `bintu.trial`, `bintu.metrics`, `bintu.sla`, `bintu.webhook` | Account/stream facts this session actually established — true/false flags, plan names, the customer's own configured webhook URL |
