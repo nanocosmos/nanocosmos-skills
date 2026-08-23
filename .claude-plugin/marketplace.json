@@ -1,0 +1,12 @@
+{
+  "name": "nanocosmos",
+  "description": "Official skills for the nanocosmos live-streaming platform (nanoStream, nanoStudio)",
+  "owner": { "name": "nanocosmos", "url": "https://www.nanocosmos.net" },
+  "plugins": [
+    {
+      "name": "nanocosmos",
+      "source": "./",
+      "description": "All nanocosmos platform skills in one plugin — invoked as nanocosmos:<skill>"
+    }
+  ]
+}

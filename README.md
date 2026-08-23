@@ -38,12 +38,22 @@ from your own account's data, not a guess.
 
 ## Install
 
-**Claude Code** (per project or per user):
+**Claude Code — as a plugin (recommended):** one install, all five skills,
+updated together, invoked as `nanocosmos:<skill>`:
+
+```bash
+claude plugin marketplace add https://gitlab.nanocosmos.cloud/organization/library/nanocosmos-skills.git
+claude plugin install nanocosmos@nanocosmos
+```
+
+(A local checkout works too: `claude plugin marketplace add /path/to/nanocosmos-skills`.)
+
+**Claude Code — individual skills** (per project or per user):
 
 ```bash
 ./install.sh                 # interactive: choose skills + scope
 ./install.sh --all --user    # everything into ~/.claude/skills/
-./install.sh nanostream nanostream-diagnostics --project
+./install.sh nanostream-development nanostream-diagnostics --project
 ```
 
 **Other assistants**: copy the desired `skills/<name>/` folder into your

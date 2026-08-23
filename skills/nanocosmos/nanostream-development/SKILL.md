@@ -1,5 +1,5 @@
 ---
-name: "nanoStream"
+name: "nanostream-development"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
