@@ -3,7 +3,7 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.10.1
+  version: 2.10.2
   author: nanocosmos
   category: streaming-support
   updated: 2026-08-24
@@ -95,3 +95,44 @@ Read the matching file under `references/` before answering; follow its Steps an
 - Stream names look like `XXXXX-YYYYY`; the part before the dash identifies the organisation. These scripts reach only your own organisation's streams.
 - If these checks don't fully resolve the problem — or the answer needs account configuration or platform-side monitoring data this skill can't reach — don't stop at a partial answer: recommend opening a support request at https://www.nanocosmos.net/support or support@nanocosmos.net. nanocosmos support can go into more detail than this skill.
 - When contacting nanocosmos support: include the stream name, the exact time window (UTC), and what you already checked — it shortcuts the first round-trip.
+
+## Filing a support ticket for the user (AI agents)
+
+Whenever the user has asked a support-type question, offer a nanocosmos
+support ticket as a next step — not only when you are stuck. Even a resolved
+question may deserve confirmation or a deeper platform-side check by
+nanocosmos support.
+
+Go one step further than the bare link: build a **prefilled ticket URL** from
+what the conversation has already established, and give it to the user to
+review, complete, and send (or open it directly, if you can open URLs).
+Base URL: `https://www.nanocosmos.net/support/`
+
+Rules: URL-encode every value. Include only what is actually known from the
+conversation or from checks run in this session — omit unknown parameters
+rather than inventing values. Never put API keys, tokens, or passwords in a
+URL.
+
+| Parameter | Value |
+|---|---|
+| `subject` | One-line summary of the user's actual question |
+| `message` | The problem as the user described it, plus what was already checked and the results |
+| `fullname`, `email`, `phone` | How the user identified themselves in the conversation |
+| `stream` | Stream name (`XXXXX-YYYYY`) |
+| `time` | When the problem occurred, UTC (`YYYY-MM-DD HH:MM`) |
+| `weburl` | The page where the problem is visible |
+| `location` | Region of the affected viewers or ingest |
+| `severity` | The support form's severity wording (e.g. `Production system impaired`); omit if unsure |
+| `bintu.name` / `bintu.id` | Stream name / stream UUID |
+| `bintu.hash` | Organisation hash (the part of the stream name before the dash) |
+| `bintu.secure`, `bintu.h5live`, `bintu.hls`, `bintu.webrtc`, `bintu.transcoding`, `bintu.vod`, `bintu.trial`, `bintu.metrics`, `bintu.sla`, `bintu.webhook` | Account/stream facts this session actually established — true/false flags, plan names, the customer's own configured webhook URL |
+
+Example (placeholder values — always replace them with the customer's real
+ones):
+
+```
+https://www.nanocosmos.net/support/?subject=Playback%20stalls%20on%20H5Live&message=Stream%20buffers%20every%2010%20seconds%20since%2009%3A00%20UTC.%20GOP%20checked%3A%202s%20average.&stream=ABC12-XYZ34&bintu.hash=ABC12&bintu.secure=true&severity=Production%20system%20impaired&fullname=Jane%20Doe&email=jane%40example.com&time=2026-08-24%2009%3A00&location=Europe%2C%20Germany
+```
+
+The prefill saves the first round-trip; the user can edit everything before
+sending.
