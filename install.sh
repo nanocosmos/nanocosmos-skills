@@ -30,11 +30,13 @@ path_for_skill() {
 
 SCOPE=""
 CHOSEN=()
+FORCE=0
 for arg in "$@"; do
   case "$arg" in
     --user) SCOPE="$HOME/.claude/skills" ;;
     --project) SCOPE="$PWD/.claude/skills" ;;
     --all) CHOSEN=("${ALL_SKILLS[@]}") ;;
+    --force) FORCE=1 ;;
     -h|--help) sed -n "2,7p" "$0"; exit 0 ;;
     *) CHOSEN+=("$arg") ;;
   esac
@@ -51,10 +53,35 @@ if [ -z "$SCOPE" ]; then
   case "$s" in p*) SCOPE="$PWD/.claude/skills" ;; *) SCOPE="$HOME/.claude/skills" ;; esac
 fi
 
+# Guard: never install into a skills root that is itself a git checkout.
+# In particular, nanocosmos team members use the private skills repo AS
+# their skills root — it already contains every skill here (these public
+# ones are generated from it), under partly IDENTICAL folder names.
+# Installing over it would overwrite team-tier content. To try the public
+# artifact, install it as a plugin instead (isolated and namespaced):
+#   claude plugin marketplace add <this repo>
+#   claude plugin install nanocosmos@nanocosmos
+if [ -e "$SCOPE/.git" ] && [ "$FORCE" -ne 1 ]; then
+  echo "error: $SCOPE is a git checkout — refusing to install into it." >&2
+  echo "       If it is the nanocosmos team skills repo, you already have" >&2
+  echo "       every skill; test the public set via the plugin instead" >&2
+  echo "       (see README). Use --force to override." >&2
+  exit 1
+fi
+
 mkdir -p "$SCOPE"
 for skill in "${CHOSEN[@]}"; do
   if ! SKILL_DIR="$(path_for_skill "$skill")"; then
     echo "error: unknown skill '$skill'" >&2; exit 1
+  fi
+  dest="$SCOPE/$skill"
+  # Per-skill guard: an existing symlink, or a folder with an internal/
+  # tier, is not something this installer produced — refuse to replace it.
+  if [ "$FORCE" -ne 1 ] && { [ -L "$dest" ] || [ -d "$dest/internal" ]; }; then
+    echo "error: $dest exists and was not installed by this script" >&2
+    echo "       (symlink or internal/ tier present) — refusing to" >&2
+    echo "       overwrite. Use --force to override." >&2
+    exit 1
   fi
   rm -rf "${SCOPE:?}/$skill"
   cp -R "$SKILL_DIR" "$SCOPE/$skill"
