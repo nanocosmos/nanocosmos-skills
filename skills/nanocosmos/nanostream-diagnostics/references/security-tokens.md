@@ -38,6 +38,7 @@ A customer asks about securing their stream, setting up playback tokens, or is e
 2. Generate tokens server-side via bintu API
 3. Configure H5Live Player with the token
 4. Use short token lifetimes (15–60 minutes); implement refresh before expiry
+5. Longer-lived, orga-wide playback tokens (`scripts/get_jwt_token.sh --days N`) are fine for testing and development only — not for a production integration. Production should stay with the <24h, per-stream/per-group scoped pattern above; a leaked orga-wide token grants playback of every stream in the org for its full lifetime and can't be shortened after minting. The lifetime/scope tradeoff is always your own security decision based on your risk tolerance.
 
 ### Common Token Issues
 

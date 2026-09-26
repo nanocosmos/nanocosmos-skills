@@ -47,7 +47,11 @@ export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 
 # --- credentials -------------------------------------------------------------
-if [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; then
+# NANO_API_TOKEN (an access token minted via the Cloud Token Service, with
+# the `metrics` audience) is accepted as an alternative to email/password —
+# recommended best practice for services and automation, since it expires and
+# carries no login. The same token drives the bintu API scripts too.
+if [ -z "${NANO_API_TOKEN:-}" ] && { [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; }; then
   for CANDIDATE in "${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${PWD}/.env"; do
     if [ -f "${CANDIDATE}" ]; then
       # set -a exports everything the .env defines, so child processes
@@ -72,6 +76,22 @@ fi
 # in a caller and skip the friendly error message below)
 if [ -n "${ANALYTICS_EMAIL:-}" ]; then export ANALYTICS_EMAIL; fi
 if [ -n "${ANALYTICS_PASSWORD:-}" ]; then export ANALYTICS_PASSWORD; fi
+if [ -n "${NANO_API_TOKEN:-}" ]; then export NANO_API_TOKEN; fi
+
+# The metrics API and bintu share one user database — the Analytics login IS
+# the nanoStream (bintu dashboard) login. NANOSTREAM_EMAIL/NANOSTREAM_PASSWORD
+# are the unified names and take precedence when both are set; ANALYTICS_*
+# keeps working as the fallback for anyone who only has the older name set.
+# (Matches nanostream-support/scripts/create_access_token.sh's
+# ${NANOSTREAM_EMAIL:-${ANALYTICS_EMAIL}} precedence — the two used to
+# disagree, which meant setting both could silently authenticate as two
+# different accounts depending on which script ran.)
+if [ -n "${NANOSTREAM_EMAIL:-}" ]; then
+  ANALYTICS_EMAIL="${NANOSTREAM_EMAIL}"; export ANALYTICS_EMAIL
+fi
+if [ -n "${NANOSTREAM_PASSWORD:-}" ]; then
+  ANALYTICS_PASSWORD="${NANOSTREAM_PASSWORD}"; export ANALYTICS_PASSWORD
+fi
 
 ANALYTICS_BASE="${ANALYTICS_BASE:-https://metrics-api.nanostream.cloud}"
 export ANALYTICS_BASE
@@ -88,9 +108,9 @@ analytics_token_cache_path() {
     "$(printf '%s' "${ANALYTICS_EMAIL}${ANALYTICS_BASE}" | cksum | cut -d' ' -f1)"
 }
 
-if [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; then
+if [ -z "${NANO_API_TOKEN:-}" ] && { [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; }; then
   if [ -z "${ENV_SH_OPTIONAL_CREDS:-}" ]; then
-    echo "error: ANALYTICS_EMAIL / ANALYTICS_PASSWORD not set and not found in any .env" >&2
+    echo "error: neither NANO_API_TOKEN nor ANALYTICS_EMAIL / ANALYTICS_PASSWORD set or found in any .env" >&2
     echo "hint: add them to a .env next to the scripts (see scripts/.env.example)" >&2
     return 1 2>/dev/null || exit 1
   fi

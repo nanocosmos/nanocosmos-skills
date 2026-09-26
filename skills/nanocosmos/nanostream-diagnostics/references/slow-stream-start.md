@@ -82,17 +82,17 @@ Do not rely on the configured encoder setting alone; "auto" keyframe modes and s
    ```
    Returns CSV: `<secure|unsecure>,<live|not live>,<raw state>`. If `not live`, start the broadcast first — the measurement needs a running stream.
 
-2. Measure the average keyframe distance:
+2. Measure the average keyframe distance (this probe also reports codec/profile/level/chroma/resolution/bitrate — ignore those fields here, only the first CSV field matters for this check):
    - CSV contains `unsecure`:
      ```bash
-     scripts/check_gop_unsecure.sh <stream_name>
+     scripts/probe_stream_unsecure.sh <stream_name>
      ```
    - CSV contains `secure`:
      ```bash
-     scripts/check_gop_secure.sh <stream_name>
+     scripts/probe_stream_secure.sh <stream_name>
      ```
 
-3. Interpret: **≤ 2 s** → GOP is fine, fall back to `diagnose-playback`. **> 2 s** → confirmed cause, proceed with the encoder fix above.
+3. Interpret the first CSV field (GOP seconds): **≤ 2 s** → GOP is fine, fall back to `diagnose-playback`. **> 2 s** → confirmed cause, proceed with the encoder fix above.
 
 
 ### Contact nanocosmos support when

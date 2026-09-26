@@ -1,12 +1,12 @@
 ---
 name: "nanostream-analytics"
-description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login)."
+description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login) or an expiring access token (NANO_API_TOKEN, recommended for services)."
 license: (c) nanocosmos
 metadata:
-  version: 1.1.3
+  version: 1.2.0
   author: nanocosmos
   category: analytics
-  updated: 2026-08-24
+  updated: 2026-08-25
 ---
 
 # nanoStream Analytics API
@@ -36,6 +36,25 @@ a short-lived JWT sent as the `X-ACCESS-TOKEN` header.
 Copy `scripts/.env.example` to `.env` and fill in `ANALYTICS_EMAIL` and
 `ANALYTICS_PASSWORD` — your Analytics dashboard login — or export them in
 your shell. **Never commit a `.env`.**
+
+**Recommended best practice — access tokens:** instead of (or in addition to)
+the login, `NANO_API_TOKEN` can hold an expiring access token minted via the
+Cloud Token Service (`POST https://token.nanostream.cloud/bintu/token`; the
+`aud` array must include `metrics`; up to 365 days). All scripts here accept
+it and it takes precedence over email/password. Prefer it wherever the
+credential leaves your shell — a service, CI job, or dashboard — since it
+expires and carries no login.
+
+**Long-lived token (frequent question):** `/authenticate` always returns a
+24-hour token and ignores expiry fields. For a longer lifetime, mint the token
+with the Cloud Token Service as above (`exp` up to 365 days).
+With `aud: ["bintu","metrics"]` one token drives both APIs:
+`x-bintu-token` header for bintu, `X-ACCESS-TOKEN` for Analytics.
+
+The Analytics login is the same account as the bintu dashboard (one shared
+user database), and the same access token also drives the bintu API —
+`NANOSTREAM_EMAIL`/`NANOSTREAM_PASSWORD` are accepted as unified aliases for
+`ANALYTICS_EMAIL`/`ANALYTICS_PASSWORD`.
 
 
 Because this is an account password rather than a scoped key: use a read-only

@@ -13,7 +13,7 @@
 # root), $PWD/.env. Never commit a .env.
 #
 # Set ENV_SH_OPTIONAL_KEY=1 before sourcing to skip the missing-BINTU_API_KEY
-# error -- used by check_gop_unsecure.sh, which needs .env for FFPROBE_PATH
+# error -- used by probe_stream_unsecure.sh, which needs .env for FFPROBE_PATH
 # but never touches BINTU_API_KEY.
 
 ENV_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,20 +32,50 @@ if [ -z "${BINTU_API_KEY}" ] || [ -z "${FFPROBE_PATH}" ]; then
   done
 fi
 
-# Guarantee the key is exported even when it came from the parent shell
+# Guarantee the values are exported even when they came from the parent shell
 if [ -n "${BINTU_API_KEY}" ]; then
   export BINTU_API_KEY
 fi
+if [ -n "${NANO_API_TOKEN}" ]; then
+  export NANO_API_TOKEN
+fi
 
-if [ -z "${BINTU_API_KEY}" ] && [ -z "${ENV_SH_OPTIONAL_KEY}" ]; then
-  echo "error: BINTU_API_KEY not set and not found in any .env" >&2
+# NANO_API_TOKEN — an expiring access token minted via the Cloud Token
+# Service (scripts/create_access_token.sh; aud must include `bintu`) — is
+# accepted as an alternative to the raw API key on all bintu read routes,
+# and is the recommended best practice wherever the credential leaves your
+# shell. BINTU_AUTH_HEADER carries whichever credential is available, as a
+# complete header line for curl:  --header "${BINTU_AUTH_HEADER}"
+# The raw API key wins when both are set (it can do strictly more).
+#
+# Set ENV_SH_REQUIRE_KEY=1 before sourcing for scripts that need the real
+# API key even when a token exists — e.g. minting tokens via CTS, which
+# authenticates with X-BINTU-APIKEY only.
+if [ -n "${BINTU_API_KEY}" ]; then
+  BINTU_AUTH_HEADER="x-bintu-apikey: ${BINTU_API_KEY}"
+elif [ -n "${NANO_API_TOKEN}" ]; then
+  BINTU_AUTH_HEADER="x-bintu-token: ${NANO_API_TOKEN}"
+else
+  BINTU_AUTH_HEADER=""
+fi
+export BINTU_AUTH_HEADER
+
+if [ -n "${ENV_SH_REQUIRE_KEY}" ] && [ -z "${BINTU_API_KEY}" ]; then
+  echo "error: this script needs the real org API key (a NANO_API_TOKEN is not enough here)" >&2
   echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
   return 1 2>/dev/null || exit 1
 fi
 
-# ffprobe is needed by the GOP check scripts only. A relative FFPROBE_PATH
-# (as commonly written in .env) is anchored to the directory .env was found
-# in -- not the caller's $PWD -- so the GOP scripts work from any directory.
+if [ -z "${BINTU_API_KEY}" ] && [ -z "${NANO_API_TOKEN}" ] && [ -z "${ENV_SH_OPTIONAL_KEY}" ]; then
+  echo "error: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env" >&2
+  echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
+# ffprobe is needed by the probe_stream_*.sh scripts only. A relative
+# FFPROBE_PATH (as commonly written in .env) is anchored to the directory
+# .env was found in -- not the caller's $PWD -- so those scripts work from
+# any directory.
 if [ -n "${FFPROBE_PATH}" ] && [ -n "${ENV_FILE_DIR}" ] && [[ "${FFPROBE_PATH}" != /* ]]; then
   FFPROBE_PATH="${ENV_FILE_DIR}/${FFPROBE_PATH}"
 fi

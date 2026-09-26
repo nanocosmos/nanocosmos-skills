@@ -23,7 +23,7 @@ EXP="$(token_claim "${TOKEN}" exp || true)"
 LEVEL="$(token_sidecar_field "${TOKEN}" 3 || true)"
 
 echo "base url     : ${ANALYTICS_BASE}"
-echo "account      : ${ANALYTICS_EMAIL}"
+echo "account      : ${ANALYTICS_EMAIL:-<token auth, no email in .env>}"
 echo "organisation : ${NAME:-<unknown>} (hash: ${HASH:-<unknown>})"
 
 if [ -n "${LEVEL}" ]; then
@@ -42,9 +42,18 @@ if [ -n "${IAT}" ] && [ -n "${EXP}" ]; then
   echo "token ttl    : $((EXP - IAT))s"
 fi
 
+# The scope line reports the organisation the login named, rather than
+# asserting "this account sees its own data only". The login response does not
+# always state an account's scope, and an assertion the reader cannot check is
+# worth less than a hash they can compare against what they expect.
 echo
-echo "DATA SCOPE: this account sees its own organisation's data only."
+echo "DATA SCOPE: the login reports organisation ${HASH:-<unknown>}."
 echo
-echo "  Note that omitting the 'streams' filter on a query aggregates over"
-echo "  every stream the organisation has — state the time range and filters"
-echo "  alongside any figure you quote."
+echo "  Check that this is the organisation you expect before you pass any"
+echo "  number from this account to someone. If it is not, stop and check"
+echo "  which account .env logs into."
+echo
+echo "  A query without a 'streams' filter covers every stream in the"
+echo "  organisation. Whenever you pass a number on, pass the time range"
+echo "  (UTC) and the filters with it: the same number means something"
+echo "  different under different filters."

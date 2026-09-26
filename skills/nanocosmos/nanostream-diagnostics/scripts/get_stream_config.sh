@@ -21,7 +21,8 @@
 #"N. Transcoded"/"N. Transcode", meaning it may be an untraceable downstream
 #daisy-chain member. Absence of a note is not proof the stream is standalone.
 #
-#Public API variant: uses your own organisation API key (BINTU_API_KEY).
+#Public API variant: uses your own organisation API key (BINTU_API_KEY) or
+#an expiring access token (NANO_API_TOKEN, see create_access_token.sh).
 #Requires python3.
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh" || exit 1
@@ -35,13 +36,14 @@ STREAM_NAME="$1" python3 - <<'PYEOF'
 import json, os, re, sys, urllib.request
 
 API = "https://bintu.nanocosmos.de"
-KEY = os.environ["BINTU_API_KEY"]
+# "x-bintu-apikey: <key>" or "x-bintu-token: <token>" — env.sh decides
+AUTH_NAME, AUTH_VALUE = os.environ["BINTU_AUTH_HEADER"].split(": ", 1)
 NAME = os.environ["STREAM_NAME"]
 MAX_HOPS = 20
 
 def get(path):
     req = urllib.request.Request(API + path, headers={
-        "Content-Type": "application/json", "x-bintu-apikey": KEY})
+        "Content-Type": "application/json", AUTH_NAME: AUTH_VALUE})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
 

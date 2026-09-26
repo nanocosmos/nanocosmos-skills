@@ -30,7 +30,7 @@ This procedure is designed to be called from other references (e.g., `slow-strea
 
 ### Why Two Checks?
 
-The platform state (from `get_stream_info.sh`) can sometimes lag — a stream may show as "live" while the encoder has already stopped. Running the GOP script against the actual stream confirms real ingest activity. A numeric result means data is flowing; an error means it is not.
+The platform state (from `get_stream_info.sh`) can sometimes lag — a stream may show as "live" while the encoder has already stopped. Running the playback probe against the actual stream confirms real ingest activity by pulling real frames — not just GOP, but the actual codec/profile/level/chroma/resolution/bitrate the encoder is really sending, which the platform-state check can never see since that only reflects what was configured. A result means data is flowing; an error means it is not.
 
 **Important:** The `secure`/`unsecure` value refers to **playback JWT token security only** — whether a JWT is required to play the stream back. It has no relation to RTMP ingest authentication.
 
@@ -49,19 +49,19 @@ The platform state (from `get_stream_info.sh`) can sometimes lag — a stream ma
    → **Result: not live** (if raw state is `ended`, suggest the customer verify their encoder is still broadcasting — in OBS: click "Start Streaming")
 
 4. **If the CSV contains `live` — verify actual ingest**
-   Run the appropriate GOP script based on security type:
+   Run the appropriate playback probe based on security type:
    - CSV contains `unsecure`:
      ```bash
-     scripts/check_gop_unsecure.sh <stream_name>
+     scripts/probe_stream_unsecure.sh <stream_name>
      ```
-   - CSV contains `secure` (the GOP script generates a JWT to access the playback stream for measurement — same stream, different access method):
+   - CSV contains `secure` (the probe generates a JWT to access the playback stream for measurement — same stream, different access method):
      ```bash
-     scripts/check_gop_secure.sh <stream_name>
+     scripts/probe_stream_secure.sh <stream_name>
      ```
 
-5. **Interpret the GOP script output**
-   - **Returns a number**: the stream is genuinely live and ingesting. The number is the average keyframe distance (GOP length) in seconds.
-     → **Result: live, GOP = `<number>`**
+5. **Interpret the probe output**
+   - **Returns a CSV line** (`<gop_seconds>,<video_codec>,<profile>,<level>,<chroma>,<w>x<h>,<video_bitrate>,<audio_codec>,<audio_bitrate>`): the stream is genuinely live and ingesting. The first field is the average keyframe distance (GOP length) in seconds; the rest is what the encoder is actually sending, useful for catching an unnoticed config drift (wrong profile/level, unexpected chroma, resolution/bitrate mismatch) alongside the liveness answer.
+     → **Result: live, GOP = `<first field>`** (report the remaining fields too when the question concerns quality/config, not just liveness)
    - **Returns an error**: the platform state is stale — the encoder has stopped even though the platform still shows "live".
      → **Result: not live (stale state)**
 
@@ -81,7 +81,7 @@ GOP length and keyframe distance are the same metric — the average time in sec
 
 ### Contact nanocosmos support when
 - Script fails to execute or returns unexpected output
-- Platform reports `live` but GOP script returns an error consistently across retries
+- Platform reports `live` but the playback probe returns an error consistently across retries
 
 ### Scope
 These scripts reach only streams of the organisation whose API key is configured — your own.

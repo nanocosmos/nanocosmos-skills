@@ -15,6 +15,10 @@ triggers:
   - user/validate
   - iss userid
   - aud bintu metrics
+  - analytics api token
+  - metrics api token
+  - analytics token expires after one day
+  - token for bintu and metrics
 severity_default: LOW
 ---
 
@@ -65,8 +69,31 @@ curl --location 'https://token.nanostream.cloud/bintu/token' \
 - `aud` is an array — include only the audiences actually needed (e.g. `["metrics"]` alone for a metrics-only dashboard). See the API reference above for the full current list — don't guess at unconfirmed values.
 - If `exp` is omitted, it **defaults to 24 hours**, same as Method 1.
 
+### Tokens for the Analytics (metrics) API
+The Analytics API login `POST https://metrics-api.nanostream.cloud/authenticate` always returns a token that expires after **24 hours**. You cannot change this lifetime: the route ignores all expiry fields. For a longer lifetime (up to 365 days), mint the token with the Cloud Token Service (Method 2 above). Put `metrics` in the `aud` array, e.g. `"aud":["metrics"]` for a metrics-only dashboard.
+
+Send the token in the `X-ACCESS-TOKEN` header to the Analytics API.
+
+### One Token for bintu and Analytics
+One token can call both APIs, because both use the same user accounts. Mint it once with both audiences, then send the same value in two different headers:
+
+```bash
+# 1. Mint with the Cloud Token Service (Method 2)
+TOKEN=$(curl -s 'https://token.nanostream.cloud/bintu/token' \
+  --header 'X-BINTU-APIKEY: <org_api_key>' \
+  --header 'Content-Type: application/json' \
+  --data '{"iss":"<user_id>","exp":<epoch_seconds>,"aud":["bintu","metrics"]}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# 2. bintu API: header x-bintu-token
+curl -s 'https://bintu.nanostream.cloud/stream?limit=1' --header "x-bintu-token: $TOKEN"
+
+# 3. Analytics API: header X-ACCESS-TOKEN
+curl -s 'https://metrics-api.nanostream.cloud/v2/usage/lastmonth' --header "X-ACCESS-TOKEN: $TOKEN"
+```
+
 ### After Generating
-The response contains the token itself. It goes wherever the API key would otherwise have gone (typically as the `x-bintu-apikey`-equivalent auth for whatever bintu endpoint is called) — but scoped and expiring, so a leak is far less damaging than a leaked org API key.
+The response contains the token itself. Send it in the `x-bintu-token` header to the bintu API, and in the `X-ACCESS-TOKEN` header to the Analytics API. The token has a scope and an expiry, so a leaked token does much less damage than a leaked org API key.
 
 ### Customer Response Guidance
 - Never recommend embedding an org-level API key in anything client-facing — steer toward one of these two token methods first.

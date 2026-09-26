@@ -3,17 +3,28 @@ name: "nanostream-development"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.2.10
+  version: 1.3.3
   author: nanocosmos
   category: streaming
-  updated: 2026-08-24
+  updated: 2026-09-23
 ---
 
 # nanoStream Context
 
 You are an engineer or web developer or marketing person creating web pages for live streaming.
 
-nanocosmos documentation is at https://docs.nanocosmos.net
+nanocosmos documentation is at https://docs.nanocosmos.net. The JS player API reference specifically
+is at https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api.
+
+**For any doubt or update about player API behavior (method signatures, params, events), check the
+official docs page above first** — don't rely solely on reverse-engineering `nanoplayer.5.min.js` or
+on assumption. The two can disagree: `updateSource` was found in the minified SDK looking like a
+`(source, options)` two-argument call, but the official docs (confirmed 2026-09-16) show a single-
+argument `updateSource(source)` with `options` bundled inside that object — the docs are the
+authority when they conflict with what minified code alone suggests. Live-verifying against the SDK
+file is still valuable for things the docs don't cover (e.g. exact internal state machine behavior),
+but cross-check the docs before writing anything down as fact, and update this skill with whichever
+the docs actually say.
 
 Every stream has an ID (stream ID or group ID for adaptive bitrate), and a stream name like XXXXX-YYYYY.
 
@@ -29,37 +40,71 @@ bintu API instead of constructing it by hand.
 
 # Live Ingest with ffmpeg
 
-Needed: a stream name from the nanocosmos bintu API in the form XXXXX-YYYYY
+Needed: a stream name from the nanocosmos bintu API in the form XXXXX-YYYYY.
+If the user hasn't given one, ask for it — never invent a stream name.
 
-Example ffmpeg call:
+## Test stream script (preferred)
 
-Input can be a file or URL, like
+`scripts/send_test_stream.sh` sends a live test stream with ffmpeg over RTMP:
 
-- CNN News (US English)
-Useful for captioning and translation tests based on speaking persons
-INPUT="https://bintu-vod-eu-02-lnd.nanocosmos.de/testvideos/news/cnn-rep-720.mp4"
+```bash
+scripts/send_test_stream.sh XXXXX-YYYYY                    # test pattern + beep
+scripts/send_test_stream.sh -i cnn -l XXXXX-YYYYY          # CNN news, looped
+scripts/send_test_stream.sh -i tagesschau -t 300 XXXXX-YYYYY
+scripts/send_test_stream.sh -i ./my-video.mp4 -H stream XXXXX-YYYYY
+scripts/send_test_stream.sh -n -i cnn XXXXX-YYYYY          # dry run: print the ffmpeg command
+```
 
-- Chromakey green screen
-useful for chromakey tests
-INPUT=https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/Green_Female_Red_New_Nano_Key1.mp4
+Options: `-s NAME` stream name (or last argument; asked for interactively when
+missing), `-i INPUT` preset / local file / URL (default `testsrc`), `-H vtrans|stream`
+ingest host (default `vtrans`), `-u URL` full ingest URL (e.g. from the Dashboard),
+`-S 1280x720` size, `-r 30` fps (GOP fixed at 2 s), `-b 1000k` video bitrate,
+`-l` loop the input, `-t SECS` duration, `-n` dry run, `-h` help.
 
-- Chromakey blue screen
-INPUT=https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/Blue_Male_White_New_Nano_Key4.mp4
+Input presets (`-i`):
 
-- Chromakey blue screen bad lighting, bad example, but good test for chromakey features like despill
-INPUT=https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/fg.mp4
+| Preset | Content | Use for |
+|---|---|---|
+| `testsrc` | ffmpeg test pattern + 150 Hz beep (no download) | ingest/playback checks |
+| `cnn` | CNN news, American English | captioning and translation tests (speaking persons) |
+| `tagesschau` | tagesschau24 news, German | captioning and translation tests (speaking persons) |
+| `greenscreen` | chromakey green screen | chromakey tests |
+| `bluescreen` | chromakey blue screen | chromakey tests |
+| `bluescreen-bad` | blue screen, bad lighting | chromakey despill tests |
 
+
+The script runs until the input ends (or forever with `-l`, or for `-t` seconds);
+when you start it from an agent, run it in the background and stop it when done.
+`Publishing denyed by notify event handler` from the server means the ingest
+was rejected for that stream name (unknown, disabled or already in use) — check
+the stream in the Dashboard / bintu API; it is not an ffmpeg problem.
+
+## Manual ffmpeg call
+
+Input can be a file or URL, for example the test videos behind the presets:
+
+- CNN News (US English): `https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/news/cnn-rep-720.mp4`
+- tagesschau24 News (German): `https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/news/tagesschau24.mp4`
+- Chromakey green screen: `https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/Green_Female_Red_New_Nano_Key1.mp4`
+- Chromakey blue screen: `https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/Blue_Male_White_New_Nano_Key4.mp4`
+- Chromakey blue screen, bad lighting (good test for despill): `https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/chromakey/nano/Foreground/fg.mp4`
+
+```bash
+INPUT="https://bintu-vod-eu-02-ak.nanocosmos.de/testvideos/news/cnn-rep-720.mp4"
 VIDEOOPTIONS="-s 640x360 -r 25 -g 50 -b:v 500k"
- 
-ffmpeg -hide_banner -y -re -i $INPUT \
+
+ffmpeg -hide_banner -y -re -i "$INPUT" \
   $VIDEOOPTIONS -c:v h264 -preset ultrafast -pix_fmt yuv420p -profile:v baseline \
   -c:a aac \
   -f flv "rtmp://bintu-vtrans.nanocosmos.de/live/XXXXX-YYYYY"
+```
 
+`$VIDEOOPTIONS` stays unquoted on purpose so it splits into separate arguments
+(run this in bash — zsh does not word-split unquoted variables).
 
 For higher quality material like greenscreen/bluescreen, use higher bitrates:
 
-VIDEOOPTIONS="-s 1280x720 -r 30 -g 60 -b:v 1500k"
+`VIDEOOPTIONS="-s 1280x720 -r 30 -g 60 -b:v 1500k"`
 
 # Live Playback with nanoStream Player
 
@@ -297,7 +342,7 @@ Hard rules (these are the mistakes to avoid):
 - **Don't duplicate the source object** for the name-vs-ID branches. Build a single base (`defaults`, `general`, `options`, `startIndex`) and then attach either `source.entries = [...]` or `source.group = {...}` from a small `if` block. See `player/player.html` for the pattern.
 - **Don't reference array indices that don't exist** — `entries: [ {…streamNames[0]}, {…streamNames[1]}, {…streamNames[2]} ]` with a single-element array makes the player request `undefined`. Build entries with `.map(...)` over the actual stream list.
 - **`startIndex` must be a valid index** into `entries`. Default to `0` unless you genuinely have multiple entries and want to start mid-list.
-- **Don't ship placeholder metrics credentials** (`accountKey: "q3jhriuw…"` etc.) in a generated page — either omit the `metrics` block entirely or fill in real values. Bogus metrics don't block playback but they pollute logs and look unfinished.
+- **Don't ship placeholder metrics credentials** (`accountKey: "q3jhriuw…"` etc.) in a generated page — either omit the `metrics` block entirely or fill in real values. Bogus metrics don't block playback (verified live 2026-09-16: removing the block entirely did not fix an unrelated connection hang) but **without it, the player never sends a single H5Live analytics beacon** — `world/playtime`, `h5live/bufferingratio`, `h5live/views/browser` and similar routes stay permanently empty no matter how much real playback happens (see `nanostream-analytics`'s "Metrics depend on client-side reporting"). The `accountId: "nanocosmos"` / `accountKey: "q3jhriuw32hitufw32"` pair shipped in `player/player.html` is the nanocosmos-wide reporting key, not a per-customer secret — the correct organization is resolved server-side from the stream name itself, so this literal value is safe and correct to reuse as-is (not a placeholder to swap out).
 
 Canonical minimal config (matches `player/player.html`):
 
@@ -395,6 +440,72 @@ Wire these on the top-level `events` object passed to `setup()`:
 
 Also guard setup: check `typeof NanoPlayer !== "undefined"` (CDN/offline) and validate the stream name/ID is non-empty before calling `setup()`.
 
+**Do NOT attach events via `player.on(...)` inside the `.then()` callback of `setup()`.** This is a
+race, not a style choice: `setup()` returns a Promise, and the SDK can fire `onReady`/`onStreamInfo`/
+`onPlay` while or immediately after that promise resolves — before a `.then()` callback's microtask
+gets a chance to run and call `player.on(...)`. When that happens the events are silently missed, the
+underlying player and analytics can be working perfectly, but any UI driven off those events (e.g. a
+"connecting…" status label) never advances and looks permanently stuck. Verified live (2026-09-16) on
+a scaffolded page that had this exact bug — `world/playoutIngest`/`viewers/concurrent` showed real
+traffic the whole time, only the status label was wrong. Always pass events in the `events: {...}`
+key of the object given to `setup()` (as in the canonical config above and in `player/player.html` /
+`player-simple.html`), never as a post-hoc `.then(function () { player.on(...) })`.
+
+#### Player lifecycle: play / pause / stop / destroy — and what each does to the backend session
+
+**There is no `stop()` method.** The full public method list, confirmed against both
+`nanoplayer.5.min.js` and the official docs (`docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api`,
+2026-09-16), is: `setup`, `destroy`, `play`, `pause`, `mute`, `unmute`, `setVolume`, `updateSource`,
+`switchStream`, `setAdaption`, `requestFullscreen`, `exitFullscreen`. `stop` is not among them —
+calling `player.stop()` throws `TypeError: player.stop is not a function`; if that's wrapped in a
+silent `try/catch` (an easy mistake), a "Stop" button will visibly do nothing and look broken with no
+error surfaced anywhere. **`destroy()` is the real stop** — same as the reference `player-demo.html`'s
+own Stop button (its `unload()` calls `player.destroy()`, nulls the player, and resets UI to idle).
+After `destroy()`, the player instance is gone; call `new NanoPlayer(...)` + `setup()` again to restart.
+
+**`pause()` is playback-only — it does not close the connection.** Confirmed by reading the SDK's
+internal state machine: `pause()` flips an internal state to `PAUSING`, sets a local "playing" flag to
+false, emits local pause events, and halts rendering/decoding — nothing in that path closes the
+WebSocket/MOQ connection to the server. Consequence for anything reading the Analytics API: **a paused
+viewer still looks like an active, connected viewer to the backend.** Concurrent-viewer counts and
+`world/playoutIngest` connection counts do not drop while paused, and no session-end fires — so nothing
+books into session-end-only routes like `world/playtime` either (see `nanostream-analytics` for which
+routes that affects). Only `destroy()` actually ends the session. Don't assume Pause and Stop are the
+same action with different UI labels, or that Pause will make a "live viewer" disappear from analytics.
+
+#### Switching to a different stream without tearing the player down
+
+Don't default to `destroy()` + `new NanoPlayer(...)` + `setup()` when the goal is just to change what's
+playing — that fully rebuilds the player (DOM element, connection, event wiring) and causes a visible
+black-frame interruption. Two purpose-built methods exist for this, documented at
+`docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api` (neither was in this skill before 2026-09-16):
+
+- **`player.updateSource(source) ⇒ Promise<config|error>`** — loads a different stream/group into the
+  *existing* player instance without a full rebuild. **`source` is a single argument** with the same
+  shape as the `source` (plus `options`) passed to `setup()` — `entries`/`group`, `startIndex`,
+  `options` all bundled into that one object, not a separate second parameter (an earlier read of the
+  minified SDK suggested a `(source, options)` two-arg form — the official docs contradict that;
+  trust the docs). Fires `onUpdateSourceInit` / `onUpdateSourceSuccess` / `onUpdateSourceFail` /
+  `onUpdateSourceError` / `onUpdateSourceAbort` / `onUpdateSourceTimeout` / `onUpdateSourceInvalid` —
+  wire these in `setup()`'s `events{}` block like any other event (see the race warning above), not
+  via a post-hoc `.on(...)`.
+
+  ```js
+  player.updateSource({
+    entries: [{ h5live: { rtmp: { streamname: "NEW-STREAM" }, security: {} } }]
+    // or: group: { id: "uuid", apiurl: "https://bintu.nanocosmos.de", security: {} }
+  }).then(function (config) {
+    console.log("update source ok: " + JSON.stringify(config));
+  }, function (error) {
+    console.log(error);
+  });
+  ```
+
+- **`player.switchStream(index) ⇒ Promise<config|error>`** — takes a **number**, the index of a
+  stream *already in the current entry/group set* (ABR rendition switching), not a new stream
+  config. Don't reach for this to play an unrelated stream — that's what `updateSource` is for.
+  Fires `onSwitchStreamInit` / `onSwitchStreamSuccess` / `onSwitchStreamFail` / `onSwitchStreamAbort`.
+
 ### Token-secure (JWT) playback in the JS player
 
 For the JS player, secure playback does NOT change `serverDomain` and does NOT use a `bintu-splay` / `/authhttp/` URL — that secure-host/path form belongs to the emulated MP4/M3U8 method (section B), not the player. The only difference from public playback is adding a `security` block to the entry. The player routes to the secure edge automatically when a `jwtoken` is present.
@@ -447,6 +558,21 @@ Docs: https://docs.nanocosmos.net/docs/cloud/cloud_overview
 
 Bintu API Docs: https://doc.pages.nanocosmos.de/bintuapi-docs
 
+## API authentication (bintu + metrics)
+
+`references/api-authentication.md` — the one place for how the platform APIs
+authenticate: bintu and the metrics API share one user database and one token
+library, and the recommended credential for all API access is an **expiring
+access token** (minted via the Cloud Token Service `POST /bintu/token` or from
+the dashboard login via `POST /user/validate`, max 365 days) instead of the
+never-expiring org API key. Access tokens go in `x-bintu-token` (bintu) /
+`X-ACCESS-TOKEN` (metrics) and are NOT playback tokens. Playback itself never
+needs API authentication — it is open (unsecured orgs) or gated by
+self-contained JWT playback tokens validated by signature (secured orgs); API
+credentials are only for *managing* streams and reading metrics through the
+APIs. Read that reference before answering any question about API keys,
+tokens for services/CI/dashboards, or credential handling.
+
 # Getting more help
 
 This skill is self-serve and covers the public API and player surface. Some
@@ -475,6 +601,41 @@ known — never invent values, never put credentials in a URL. Full parameter
 reference: the repo's `skills/nanocosmos/README.md`.
 
 # Changelog
+
+## 1.3.3 — 2026-09-23
+
+- New `scripts/send_test_stream.sh`: send a live test stream via ffmpeg/RTMP with the stream
+  name as parameter (asked for when missing) and input presets (`testsrc`, `cnn`, `tagesschau`,
+  chromakey clips) or any file/URL; options for host, size, fps, bitrate, loop, duration, dry run.
+- Ingest section: add the German tagesschau24 news test video, unify test-video URLs on
+  `bintu-vod-eu-02-ak`, quote `$INPUT` in the manual ffmpeg example, document the
+  "Publishing denyed" ingest rejection.
+- Internal (team only): `internal/scripts/send_test_stream.sh` with the `t4` gaming test file
+  for live captions / Brazilian Portuguese translation tests, and `-H stage` for the staging ingest.
+
+## 1.3.2 — 2026-09-16
+
+- New "Switching to a different stream without tearing the player down" section: documents
+  `player.updateSource(source)` (single-arg, same shape as `setup()`'s `source`+`options`) and
+  `player.switchStream(index)` (ABR rendition switching within the current entry set, NOT for
+  playing an unrelated stream), both sourced from `docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api`.
+  Corrects the player lifecycle note's method list, which was incomplete (missing `setVolume`,
+  `updateSource`, `switchStream`, `setAdaption`, `requestFullscreen`, `exitFullscreen`).
+
+## 1.3.1 — 2026-09-16
+
+- Player events: warn against attaching `onReady`/`onStreamInfo`/`onPlay`/etc. via `player.on(...)`
+  inside `setup()`'s `.then()` callback — a race that can silently miss early events and leave a
+  status UI stuck on "connecting…" forever even though playback/analytics are fine. Always pass
+  events via the `events: {...}` key of the `setup()` config instead. Found and fixed live in a
+  scaffolded page (`nanoplayer-stats-demo`'s `nanoplayer-stats.html`).
+
+## 1.3.0 — 2026-08-25
+
+- New `references/api-authentication.md`: the unified API authentication
+  model (bintu + metrics + Cloud Token Service) — credential types, access
+  tokens as best practice, minting routes, token anatomy. First step toward
+  this skill covering the whole platform (bintu and metrics info to follow).
 
 ## 1.2.4 — 2026-07-31
 

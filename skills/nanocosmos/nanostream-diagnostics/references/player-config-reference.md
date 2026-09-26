@@ -490,6 +490,10 @@ for it (`min`/`start`/`target`/`limit`/`max`, in that ascending order).
 
 ### 11. `metrics` block
 
+For where `accountId`/`accountKey` values come from (not self-service in
+the Analytics Dashboard — request from your nanocosmos contact), see
+`analytics-monitoring.md`.
+
 | Field | Required? |
 |---|---|
 | `accountId` | required (to use metrics at all) |

@@ -4,7 +4,8 @@
 #Input arg - [stream name] (used for context only; profiles are orga-wide)
 #Output json - [list of all available transcode profiles]
 #
-#Public API variant: uses your own organisation API key (BINTU_API_KEY).
+#Public API variant: uses your own organisation API key (BINTU_API_KEY) or
+#an expiring access token (NANO_API_TOKEN, see create_access_token.sh).
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh" || exit 1
 
@@ -15,6 +16,6 @@ fi
 
 RESPONSE=$(curl --silent --location "https://bintu.nanocosmos.de/transcoding_profiles" \
 --header 'Content-Type: application/json' \
---header "x-bintu-apikey: ${BINTU_API_KEY}")
+--header "${BINTU_AUTH_HEADER}")
 
 echo "$RESPONSE"

@@ -5,7 +5,8 @@
 #Output csv - [orga setup status(secure or unsecure)],[stream state(live or not live)],[raw state(live/ended/created/...)]
 #
 #Public API variant: uses GET https://bintu.nanocosmos.de/stream/<name>
-#with your own organisation API key (BINTU_API_KEY).
+#with your own organisation API key (BINTU_API_KEY) or an expiring
+#access token (NANO_API_TOKEN, see create_access_token.sh).
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh" || exit 1
 
@@ -18,7 +19,7 @@ STREAM_NAME=$1
 
 RESPONSE=$(curl --silent --location "https://bintu.nanocosmos.de/stream/${STREAM_NAME}" \
 --header 'Content-Type: application/json' \
---header "x-bintu-apikey: ${BINTU_API_KEY}")
+--header "${BINTU_AUTH_HEADER}")
 
 WEBSOCKET=$(echo "$RESPONSE" | grep -o '"websocket":"[^"]*"' | head -1 | cut -d'"' -f4)
 STATE=$(echo "$RESPONSE" | grep -o '"state":"[^"]*"' | head -1 | cut -d'"' -f4)

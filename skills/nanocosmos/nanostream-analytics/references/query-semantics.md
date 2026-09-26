@@ -13,11 +13,11 @@ results if you assume the obvious. Read it before interpreting any output.
 This is the single most common source of silently-too-small result sets:
 
 | Parameter   | Combines as | Meaning                                            |
-|-------------|-------------|----------------------------------------------------|
-| `streams`   | **OR**      | union of the named streams                          |
-| `countries` | **OR**      | union of the named countries                        |
-| `events`    | **OR**      | union of the named H5Live events                    |
-| `tags`      | **AND**     | **intersection** — streams carrying *all* the tags  |
+| ----------- | ----------- | -------------------------------------------------- |
+| `streams`   | **OR**      | union of the named streams                         |
+| `countries` | **OR**      | union of the named countries                       |
+| `events`    | **OR**      | union of the named H5Live events                   |
+| `tags`      | **AND**     | **intersection** — streams carrying _all_ the tags |
 
 Passing two tags does not widen the query, it narrows it. If a tag-filtered
 query returns less than expected, drop to a single tag before concluding there
@@ -28,14 +28,12 @@ see** — that is a meaningful difference from passing an explicit list, and for
 an org-wide account it can be a very large query.
 
 **Some routes do not support some filters, and you cannot tell from the path.**
-Tag filtering is off on `/v2/usage/history/timeseries`, on both
-`/v2/alerting/ingest/find|details` and on the per-organisation playback-start
-routes; the dashboard greys out its Live-Captions concurrency chart entirely when
-a stream or tag filter is active rather than sending it. A filter that a route
-ignores fails silently — the result looks like a filtered answer. Some routes
-simply do not support a given filter; if a filter appears to be ignored, that
+
+
+Some routes simply do not support a given filter; if a filter appears to be ignored, that
 is why — believe the observed behaviour over the uniform look of the query
 string.
+
 
 Repeat the key for array parameters:
 
@@ -57,27 +55,25 @@ bash scripts/query.sh /v2/h5live/playtime/timeseries \
 - `interval` is **required** on timeseries routes and takes
   `minute | hour | day | week | month | year`. Choose it to match the range:
   `interval=minute` over a week returns an enormous payload.
+- **`interval=minute` is hard-capped at a 12-hour range.** Verified live (2026-09-16):
+  `HTTP 400 — The time range is too long: The max time range duration for interval 'Minute' is 12
+  hours.` This isn't just a size/performance suggestion — it's a rejected request above 12h.
+  `interval=hour` works fine up to at least 7 days. A simple `hours <= 12 ? "minute" : "hour"` switch
+  covers both cases.
+- **The `streams` filter matches by stream *name* (`XXXXX-YYYYY`), not by group/stream UUID.** If a
+  UUID (nanoPlayer's `source.group.id` form) is passed as `streams`, it is silently ignored rather
+  than erroring — the query falls back to org-wide aggregate data while still looking scoped to one
+  stream. Resolve a UUID to its member stream name(s) first via
+  `GET https://bintu.nanocosmos.de/stream/<uuid>` (header `x-bintu-token`, an access token whose
+  `aud` includes `bintu` — the same analytics access token works since its `aud` is `["bintu",
+  "metrics"]`) and pass the resolved name(s) as `streams` instead. This was a real bug caught live in
+  a scaffolded dashboard: the first geo numbers it showed looked like real per-stream traffic but
+  were actually whole-org aggregate, mislabeled as stream-scoped.
 
-## The API returns raw values; the dashboard converts them
-
-Every figure you see on a dashboard panel has been divided by something. The API
-returns base units, and **the response field name tells you which**:
-
-| `metric=` | Response field | API returns | Dashboard shows |
-|---|---|---|---|
-| `bytes` | `bytes` | bytes | `/ 1e9` → **GB** |
-| `playtime` | `seconds` | seconds | `/ 3600` → **hours** |
-
-The same holds for Live Captions uptime — `/v2/captions/usage/...` returns
-**seconds**, and every "[Hours]" column in the dashboard is `seconds / 3600`.
-
-So a raw API number placed next to a dashboard number is wrong by a factor of
-10⁹ or 3600. Convert before comparing, and state the unit whenever a figure is
-quoted. When in doubt, look at which field the value came out of.
 
 ## Usage is booked when a session ends, not while it runs
 
-This changes what a usage timeseries *is*, and it is easy to misread as a rate.
+This changes what a usage timeseries _is_, and it is easy to misread as a rate.
 
 Usage — both `bytes` and `playtime`, for playout as well as ingest — **is
 calculated and logged only when the stream or playout restarts or stops**. The
@@ -89,7 +85,7 @@ Consequences, in order of how often they bite:
 - **A running session contributes nothing.** A stream that has been live for six
   hours shows up as zero until it stops.
 - **A bucket is not the traffic that flowed during it.** It is the sum of the
-  sessions that *ended* in it. Those six hours land entirely in the minute the
+  sessions that _ended_ in it. Those six hours land entirely in the minute the
   stream stopped, however long the stream ran before that.
 - **So sum, don't peak.** Totalling a usage timeseries over a range is valid.
   Reading one bucket as throughput-at-that-time is not — a spike marks a stop, not
@@ -99,13 +95,33 @@ Consequences, in order of how often they bite:
 
 Same trap as the concurrent-viewer delay below: a fresh number is not a final one.
 
+**This is not limited to `usage/*` — the same booking-on-close applies to `world/playtime` and other
+H5Live session-aggregate routes (playtime timeseries, buffering ratio, views-by-browser, etc.).**
+Verified live (2026-09-16): a stream with real, sustained playback showed 26+ successful
+`playback/start/success` events and non-zero `viewers/concurrent`, yet `world/playtime` stayed
+`{"statusCode":2000,"statusInfo":"No data available"}` for the entire session — because none of the
+viewing sessions had actually closed yet. Nothing was wrong; nothing had ended.
+
+**For geo/country breakdowns specifically, prefer `/v2/world/playoutIngest` over `/v2/world/playtime`
+when you need a real-time answer.** `playoutIngest` counts playout and ingest *connections* as they
+happen — no session-end wait, confirmed to return data immediately for an in-progress session. Same
+`country`/`alpha2` shape as `playtime`, different count fields: `ingest.count` / `playout.count` /
+`total.count` instead of `totalUniquePlaybacks.count` / `averagePlaybackTime.seconds`. Use `playtime`
+when you specifically want average-playback-time-per-country, or a final/settled count after sessions
+have closed — not as the default "is anyone watching this right now" check.
+
+**A paused player does not end its session.** In the nanoStream JS player, `pause()` only stops local
+rendering — it does not close the underlying connection (see the `nanostream` skill's player-lifecycle
+section). A paused viewer keeps counting toward `viewers/concurrent` and `world/playoutIngest`, and
+never triggers the session-close that `world/playtime` needs. Only an actual disconnect —
+`player.destroy()`, closing the tab, or the connection dropping — ends a session.
+
 ## Top lists are capped, and not exact
 
 The usage breakdowns — by stream name, IP, referrer or token — return at most
 **1,000 entries**, ordered by the metric. On top of that they are **approximate**:
 an entry can be missing from the list altogether, or come back with a value that is
-too low, and the ordering can be off with it. Nothing in the response indicates
-either.
+too low, and the ordering can be off with it.
 
 The wider the query, the larger the deviation; a long time range is the main
 driver. A narrow query is exact — with an explicit `streams` list or a short range,
@@ -120,11 +136,11 @@ evidence that it had no traffic.
 
 The real outcome is in the response body:
 
-| Body status | Meaning                                              |
-|-------------|------------------------------------------------------|
-| `1000`      | OK — data found                                       |
-| `2000`      | NO DATA — request was valid, nothing matched          |
-| `2001`      | NO ALERTS — valid, but no alerts in range             |
+| Body status | Meaning                                      |
+| ----------- | -------------------------------------------- |
+| `1000`      | OK — data found                              |
+| `2000`      | NO DATA — request was valid, nothing matched |
+| `2001`      | NO ALERTS — valid, but no alerts in range    |
 
 `scripts/query.sh` checks this and exits `3` on 2000/2001 so a no-data result is
 distinguishable from a successful one in a pipeline. Never report "no traffic"
@@ -134,7 +150,7 @@ confirm the filters, since an AND-combined tag filter produces exactly the same
 
 ## `format=csv`
 
-65 of the 77 routes accept `format=csv`. For long timeseries this is
+Most routes accept `format=csv`. For long timeseries this is
 dramatically more compact than the JSON envelope and much cheaper to read into
 context. Prefer it whenever the result is going to be summarised rather than
 parsed field-by-field. CSV responses carry no status envelope, so the 1000/2000
@@ -147,6 +163,17 @@ An empty H5Live result can therefore mean "no viewers" **or** "player not
 instrumented". Before treating it as a traffic signal, confirm with an
 ingest-side route under `/v2/monitoring/ingest/...`, which does not depend on
 player configuration.
+
+**Concretely, "configured to send metrics" means a `metrics: {...}` block passed to the JS player's
+`setup()` call** (`accountId`, `accountKey`, `userId`, `eventId`, `statsInterval` — see the `nanostream`
+skill's player config reference for the exact shape and the literal value to use). Verified live
+(2026-09-16): a player with no `metrics` block played a stream perfectly — real video, `onStats` firing,
+no errors — while `playback/start/success`, `world/playtime`, `h5live/bufferingratio` and
+`h5live/views/browser` stayed empty for the entire session. Adding the block (using the nanocosmos-wide
+`accountKey` shipped in the skill's reference player, not a bogus placeholder) fixed it — the same
+session then showed up in `playback/start/success` within under a minute. This is the single most
+common reason a custom/scaffolded player page shows genuinely-live playback but zero analytics: the
+`metrics` block was left out entirely, which is easy to do since playback itself never signals the gap.
 
 ## Routes that do not behave like the rest
 
@@ -165,7 +192,7 @@ For a "right now" reading, end the window at least ~3 minutes back — e.g.
 
 **SRT ingest is a per-stream timeseries over a window you cannot choose.**
 `/v2/monitoring/ingest/srt/timeseries` ignores `from` and `to` and always returns
-the **last completed minute**. The result is not one value per stream but a *series*
+the **last completed minute**. The result is not one value per stream but a _series_
 per stream — the individual SRT samples from that minute, oldest first.
 
 ```
@@ -184,13 +211,13 @@ of busy streams can truncate.
 
 **Mind the status code on this route.** Every requested stream appears in `data`,
 with `values: []` when it had no samples — and the status flips to `2000` (NO
-DATA) as soon as *at least one* requested stream came back empty, even if the
+DATA) as soon as _at least one_ requested stream came back empty, even if the
 others returned full series. `query.sh` exits 3 on 2000, so a batch of 50 streams
 with one idle stream exits 3 while the body holds good data for the other 49. When
 you query more than one stream here, read `data`, not the exit code; the
 `statusInfo` message names the streams that were empty.
 
-**Latest RTMP metrics** (`/v2/monitoring/ingest/rtmp/latestMetrics`) *is* the
+**Latest RTMP metrics** (`/v2/monitoring/ingest/rtmp/latestMetrics`) _is_ the
 point-in-time route: one stream, one value, the newest from roughly the last minute.
 Use it for "what is this stream doing right now", and the SRT route for "what
 happened inside the last minute".
@@ -202,24 +229,11 @@ dashboard itself only links out. So a code you get back is meaningless until you
 resolve it against the right external reference, and the references differ per
 route:
 
-| Route | Authority |
-|---|---|
-| `/v2/h5live/errorcodes/...` | `docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api#NanoPlayer..errorcode` |
+| Route                        | Authority                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `/v2/h5live/errorcodes/...`  | `docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api#NanoPlayer..errorcode`   |
 | `/v2/h5live/stopReasons/...` | `docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api#NanoPlayer..pausereason` |
-| `/v2/webrtc/errorcodes/...` | `docs.nanocosmos.de/docs/webrtc/nanostream_webrtc_api#errorcode--number` |
-| `/v2/webrtc/stopReasons/...` | `docs.nanocosmos.de/docs/webrtc/nanostream_webrtc_api#events` |
-| `/v2/troubleshooting/playout` events | `docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api_errors` |
-| `/v2/alerting/ingest/...` | `docs.nanocosmos.de/docs/analytics/alerting#alert-definitions` |
-| `/v2/troubleshooting/rtmp/...` | `docs.nanocosmos.de/docs/analytics/troubleshooting#other-samples` |
 
 
 Note the naming trap in the second row: what the API calls **stop reasons are the
-player's *pause* reasons**. Do not read them as stream-ending events.
-
-## Filter-discovery routes are referenced but absent
-
-Several parameter descriptions point to "Available countries" / "Available
-events" routes under a *Filtering* section. The `Filtering` and
-`Playback token revocation` tags exist in the spec but carry **no operations**
-in v2.34.3. Do not build anything that depends on them; derive the available
-values from a broken-down query (`breakdownTerm=country`) instead.
+player's _pause_ reasons**. Do not read them as stream-ending events.

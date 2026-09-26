@@ -23,14 +23,11 @@
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
-CACHE="$(analytics_token_cache_path)"
-# Sidecar holding the tier as the SERVER reported it. Same lifetime as the token.
-TIER_CACHE="${CACHE}.tier"
-
-# --- reuse a cached token that is still comfortably valid -------------------
-if [ "${1:-}" != "--refresh" ] && [ -f "${CACHE}" ]; then
-  CACHED="$(cat "${CACHE}" 2>/dev/null || true)"
-  if [ -n "${CACHED}" ] && "${PY}" - "${CACHED}" <<'PY' 2>/dev/null
+# True when the given JWT decodes and has more than 30s of validity left.
+# No signature check — this is a local, informational expiry read, the same
+# kind _claims.sh's token_claim() does; the API enforces authorisation itself.
+token_still_valid() {
+  "${PY}" - "$1" <<'PY' 2>/dev/null
 import sys, json, base64, time
 parts = sys.argv[1].split('.')
 if len(parts) < 2:
@@ -39,7 +36,32 @@ pad = parts[1] + '=' * (-len(parts[1]) % 4)
 exp = json.loads(base64.urlsafe_b64decode(pad)).get('exp', 0)
 sys.exit(0 if exp - time.time() > 30 else 1)
 PY
-  then
+}
+
+# --- explicit token override -------------------------------------------------
+# NANO_API_TOKEN: an access token minted via the Cloud Token Service
+# (audience must include `metrics`). Takes precedence over email/password —
+# the recommended way to hand API access to services and automation, since it
+# expires and carries no login. Fails loudly when expired rather than
+# silently sending a dead token.
+if [ -n "${NANO_API_TOKEN:-}" ]; then
+  if token_still_valid "${NANO_API_TOKEN}"; then
+    printf '%s' "${NANO_API_TOKEN}"
+    exit 0
+  fi
+  echo "error: NANO_API_TOKEN is expired or malformed" >&2
+  echo "hint: mint a fresh access token via the Cloud Token Service (POST /bintu/token, aud including 'metrics'), or unset NANO_API_TOKEN to fall back to ANALYTICS_EMAIL/ANALYTICS_PASSWORD" >&2
+  exit 1
+fi
+
+CACHE="$(analytics_token_cache_path)"
+# Sidecar holding the tier as the SERVER reported it. Same lifetime as the token.
+TIER_CACHE="${CACHE}.tier"
+
+# --- reuse a cached token that is still comfortably valid -------------------
+if [ "${1:-}" != "--refresh" ] && [ -f "${CACHE}" ]; then
+  CACHED="$(cat "${CACHE}" 2>/dev/null || true)"
+  if [ -n "${CACHED}" ] && token_still_valid "${CACHED}"; then
     printf '%s' "${CACHED}"
     exit 0
   fi

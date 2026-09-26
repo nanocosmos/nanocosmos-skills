@@ -31,7 +31,7 @@ Almost every route takes `from`, `to`, and the optional filters `streams`, `coun
 |---|---|---|
 | `/v2/monitoring/ingest/bitrate/audio/timeseries` | GET | Ingest audio bitrate |
 | `/v2/monitoring/ingest/bitrate/timeseries` | GET | Ingest audio/video bitrate |
-| `/v2/monitoring/ingest/bitrate/video/timeseries` | GET | Ingest video bitrate |
+| `/v2/monitoring/ingest/bitrate/video/timeseries` | GET | Ingest video bitrate — verified live (2026-09-16) to return `{"statusCode":2000,"statusInfo":"no metrics have been found"}` for a stream confirmed genuinely live (real `ffprobe` I-frames, working curl playback) — a real platform-side gap for that stream, not a caller bug. If empty, try `/v2/monitoring/ingest/rtmp/latestMetrics` first (same figures, one stream/point-in-time, had data for the exact same stream at the exact same time) before concluding there's no ingest data at all. Same caveat likely applies to the sibling `bitrate/audio/timeseries`, `bitrate/timeseries`, `timeRatio/timeseries`, `maxFrameDelay/timeseries` routes. |
 | `/v2/monitoring/ingest/maxFrameDelay/timeseries` | GET | Ingest max frame delay |
 | `/v2/monitoring/ingest/rtmp/latestMetrics` | GET | Ingest latest RTMP metrics |
 | `/v2/monitoring/ingest/srt/timeseries` | GET | Ingest SRT metrics |

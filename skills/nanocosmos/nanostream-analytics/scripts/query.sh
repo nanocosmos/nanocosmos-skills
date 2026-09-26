@@ -15,8 +15,8 @@
 #   # CSV instead of JSON — far more compact for long timeseries:
 #   bash scripts/query.sh /v2/usage/bytes/timeseries from=... to=... interval=day format=csv
 #
-# Your account is scoped to your own organisation — every query returns your
-# own data only.
+# A customer account is scoped to its own organisation; every query then
+# returns that organisation's data only.
 #
 # GET only, by design. The API also exposes write routes (alert-notification
 # configuration); this skill is read-only and deliberately ships no wrapper
@@ -24,8 +24,10 @@
 # whole organisation. Use the Analytics dashboard to change receivers.
 #
 # ANALYTICS_EXTRA_HEADER: optional — one additional HTTP header ("Name: value")
-# sent with the request. Rarely needed directly; front-end scripts use it to
-# add scoping headers without duplicating the request handling here.
+# sent with the request. Rarely needed directly; a wrapper script can use it to
+# add a header without duplicating the request handling here. Whenever it is
+# set, the header is echoed to stderr: no request should carry a header the
+# caller cannot see in the output.
 #
 # Exit codes: 0 data, 3 no data (API status 2000/2001), 1 error.
 
@@ -81,7 +83,12 @@ PY
 TOKEN="$(bash "${SCRIPT_DIR}/get_token.sh")"
 
 EXTRA_HEADER_ARGS=()
-[ -n "${ANALYTICS_EXTRA_HEADER:-}" ] && EXTRA_HEADER_ARGS+=(-H "${ANALYTICS_EXTRA_HEADER}")
+if [ -n "${ANALYTICS_EXTRA_HEADER:-}" ]; then
+  EXTRA_HEADER_ARGS+=(-H "${ANALYTICS_EXTRA_HEADER}")
+  # Say so. A header pinned in .env would otherwise apply to every request
+  # here without ever appearing in the output.
+  echo "extra header : ${ANALYTICS_EXTRA_HEADER}" >&2
+fi
 
 URL="${ANALYTICS_BASE}${RAW_PATH}"
 [ -n "${QUERY}" ] && URL="${URL}?${QUERY}"

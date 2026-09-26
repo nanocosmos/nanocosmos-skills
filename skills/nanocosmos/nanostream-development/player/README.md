@@ -5,6 +5,50 @@ A single-file demo player page for the [nanocosmos platform](https://docs.nanoco
 - **File:** `player-demo.html` (self-contained — HTML + CSS + JS, no build step)
 - **Player:** nanoStream Player 5 (`nanoplayer.5.min.js`, loaded from the nanocosmos CDN)
 
+## Sibling page: `player-simple.html`
+
+The minimal counterpart to the diagnostics page: one stream input, Load/Stop, a status line, nothing else. Built on the nanocosmos **demo shell** with the common CSS (`fonts.css` + `demo.css` from the brand-guidelines skill) inlined per the standalone-shipping rule, so the single file works anywhere (`file://` or any static host). Same verified Player 5 config and URL params (`?stream=`, `?token=`/`?jwtoken=`, `?server=`); auto-loads on open, Enter in the stream field reloads.
+
+## Sibling page: `player-concurrent.html`
+
+`player-simple.html` plus one metrics panel: **max concurrent viewers** of the
+played stream, from the nanoStream Analytics API v2
+(`GET https://metrics-api.nanostream.cloud/v2/viewers/concurrent/timeseries`,
+header `X-ACCESS-TOKEN`; the API is CORS-open, verified 2026-08-24). Shows a
+headline number plus a **2-hour minute-resolution line chart** (inline SVG:
+2px brand-blue line + 10% area wash, crosshair tooltip snapping to the nearest
+minute, clean y-ticks, 30-min x labels, collapsible data table as the no-hover
+fallback; the blue passes the dataviz palette validator on white). Polls once
+per minute; the window ends at the second-last complete minute as the API spec
+prescribes (the metric is written ~30 s after a minute closes, so the chart
+trails live by ~2 minutes). A minute the API omits is plotted as 0 viewers.
+Auth, either way: **sign in on the page** with an Analytics dashboard account
+(credentials go only to the API's `/authenticate`, never stored — the page
+keeps just the returned short-lived token), or paste/pass a token
+(`?atoken=`). A **metrics-scoped bintu user token** works as the token too
+(`/authenticate` passes bintu tokens straight through — verified live
+2026-08-24 with a token minted per
+`nanostream-support/references/nanostream-token-generation.md` Method 2,
+`aud:["metrics"]`). Playing by stream name filters the count to
+that stream; playing a UUID group shows the org-wide total (the `streams`
+filter takes names, not UUIDs). **No credentials are embedded in the page.** HTTP 401 →
+token expired, HTTP 403 → route needs a higher Analytics plan tier; both are
+surfaced in the panel. Same player config and URL params as
+`player-simple.html`.
+
+## Sibling page: `player-diagnostics.html`
+
+A diagnostics-focused variant built on the official nanocosmos **demo shell** (brand-guidelines demo mode: Lexend Deca + Source Sans 3, brand tokens, minimal header/footer, page version stamp) instead of the Dark Neutral Studio look — suitable for hosting on `web.pages.gitlab.nanocosmos.cloud`. Same verified Player 5 config and URL params (`?stream=`, `?token=`/`?jwtoken=`, `?server=`) plus a diagnostics tier:
+
+- **Live stats panel** — latency / bitrate / buffer / frame rate from `onStats`, plus session counters (stats updates, buffering events, errors) and the raw latest `onStats` payload as collapsible JSON.
+- **Stream info panel** — the flattened `onStreamInfo` / `onStreamInfoUpdate` payload (codecs, resolution, etc. as delivered by the player).
+- **Timestamped event log** — all wired player events (`onReady`, `onStreamInfo(Error)`, `onPlay`/`onPause`, `onStartBuffering`/`onStopBuffering`, `onError`, `onWarning`, `onSwitchStream*`, mute events …), color-coded, capped at 300 lines.
+- **Copy Diagnostics Report** — one click copies a plain-text report (UTC time, page URL with tokens redacted, user agent, config summary, counters, last stats, stream info, event log) for pasting into a support ticket. JWTs are never included.
+- **Extra controls** — Pause/Resume, Mute/Unmute, Stop, latency-control-mode select and faststart / MOQ / autoplay / controls toggles (setup-time options restart the player on change).
+- **Themes** — header button cycles `light → dark → studio`; URL param `?theme=light|dark|studio`; defaults to the OS preference and remembers the last manual choice (localStorage).
+  - `dark` — brand navy scale (deep-navy page, platform-navy panels); orange/blue accents and the navy header unchanged.
+  - `studio` — the **Dark Neutral Studio** look (dark-neutral-studio skill): matte graphite panels, brand-blue header with orange rule, recessed orange-edged inputs, orange Load button (orange = commit action), blue status strip. Brand fonts (Lexend Deca / Source Sans 3) stay unchanged in all themes.
+
 ## Run
 
 Just open the file — it works over `file://` or any static host:
