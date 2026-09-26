@@ -42,11 +42,13 @@ from your own account's data, not a guess.
 updated together, invoked as `nanocosmos:<skill>`:
 
 ```bash
-claude plugin marketplace add https://gitlab.nanocosmos.cloud/organization/library/nanocosmos-skills.git
+git clone <this repository's clone URL> nanocosmos-skills
+claude plugin marketplace add ./nanocosmos-skills
 claude plugin install nanocosmos@nanocosmos
 ```
 
-(A local checkout works too: `claude plugin marketplace add /path/to/nanocosmos-skills`.)
+(Already have a local checkout? Skip the clone and point at its path
+directly: `claude plugin marketplace add /path/to/nanocosmos-skills`.)
 
 **Claude Code — individual skills** (per project or per user):
 

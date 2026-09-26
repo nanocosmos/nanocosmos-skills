@@ -75,7 +75,7 @@ See `player-config-reference.md` for the full field table and validation
 rules for the `metrics` block.
 
 ### Alerts and API Access
-- General reference docs for the monitoring and alerts feature: https://docs.nanocosmos.de/docs/analytics/monitoring
+- General reference docs for the monitoring and alerts feature: https://docs.nanocosmos.net/docs/analytics/monitoring
 - Alerts are configured through the **Analytics API** (not Dashboard settings): stream start/stop notifications, quality degradation; webhook notifications are available
 - Programmatic access to metrics is via the **Analytics API at `metrics-api.nanostream.cloud`** — not the bintu API. Endpoint paths start directly with `/v2/...` (no `/api/` prefix), e.g. `https://metrics-api.nanostream.cloud/v2/h5live/playtime/timeseries`. It is public; the available feature set depends on the customer's plan. There's also a separate **Analytics Dashboard (web UI) at `metrics.nanostream.cloud`** — don't confuse the two. The old `metrics.nanocosmos.de` (with `/api/v2/...` paths) still works but is deprecated — prefer the new API host for new integrations. API docs: https://api.nanostream.cloud/docs/analytics/v2/.
 

@@ -52,7 +52,7 @@ Reference implementation: **https://files.nanocosmos.de/index.php/s/XcDmFzzqeYkS
 
 What it does:
 - Configures the NanoPlayer with **two stream groups, A and B**, using **bintu group IDs** (not individual single-quality stream entries) — so this is designed for `group`-type A/B streams (see `stream-config-lookup`), not raw single streams.
-- Implements failover using the player's **`updateSource` API** (https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_update_source#updatesource-api), switching from A→B or B→A when specific error conditions fire.
+- Implements failover using the player's **`updateSource` API** (https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_update_source#updatesource-api), switching from A→B or B→A when specific error conditions fire.
 - Error conditions that trigger a switch are defined in `main.js` under `getReasonsForFailover()` — customizable to whatever error events should count as "this stream is bad, switch now."
 - Includes a safeguard: `failoverCountMax` in `main.js` caps the number of failover attempts, to stop repeated flapping if the underlying issue persists rather than retrying indefinitely.
 

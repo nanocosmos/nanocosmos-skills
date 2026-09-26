@@ -25,7 +25,7 @@ is well-formed** — every `source`/`playback`/`style`/`events`/`tweaks`/
 `metrics` key, its valid values/ranges, documented defaults, what silently
 changed between v4 and v5, and which runtime error code a given mistake
 surfaces as. Gathered from all 26 config-relevant pages under
-https://docs.nanocosmos.de/docs/nanoplayer (list at the bottom).
+https://docs.nanocosmos.net/docs/nanoplayer (list at the bottom).
 
 ### When to Use
 
@@ -194,7 +194,7 @@ what nearly every config seen in support is doing.
 **Pull mode** is a separate, non-default setup: the customer already runs
 their own external RTMP server, and H5Live Player is configured to pull
 directly from it instead of from nanocosmos's push-ingested infrastructure.
-Per https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_introduction#pull-mode:
+Per https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_introduction#pull-mode:
 ```
 h5live.rtmp.url=rtmp://<yourserver-address>/<yourserver-application>
 h5live.rtmp.streamname=<yourserver-streamname>
@@ -253,7 +253,7 @@ highest). An out-of-range or invalid `startIndex` silently falls back to `0`.
 **General rule: any field not covered by this reference is not a valid
 config parameter — confirmed, don't assume it does something just because
 it looks plausible.** This reference is built from every config-relevant
-page under `docs.nanocosmos.de/docs/nanoplayer/` (list at the bottom); if a
+page under `docs.nanocosmos.net/docs/nanoplayer/` (list at the bottom); if a
 field isn't in it, the player doesn't read it, full stop — treat it as
 inert/vestigial rather than guessing at a purpose for it. Example seen live:
 `source.startMobileIndex`, sitting right next to a real `startIndex` in a
@@ -680,11 +680,11 @@ v5 default, so "not set in config" still resolves to a concrete value.
 
 | # | Feature | Setting to report | Reference |
 |---|---|---|---|
-| 1 | MOQ (Media over QUIC) | `playback.enableMediaOverQuic` (Enabled/Disabled, default **true**) and `playback.enableQuicConnectionProbe` (Enabled/Disabled, default **true**) — report both together, they're meant to be paired. If enabled, note whether every custom `h5live.server` entry actually carries a `webtransport` URL (bintu-managed sources already have it); if not, MOQ silently has nothing to run over for that entry and falls back to WebSocket/MSE. | [nanoplayer_feature_moq](https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_feature_moq) |
-| 2 | Fast playback start | `playback.faststart` (Enabled/Disabled, default **true** in v5, was **false** in v4 — flag if a v4-authored config left this unset expecting the old default). If enabled on a multi-entry/ABR source, note whether `startIndex`/`startQuality` is pinned to a conservative (medium/low) tier — faststart + a high-bitrate start on a constrained connection is the documented risk case. | [nanoplayer_feature_fast_start](https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_feature_fast_start) |
-| 3 | Autoplay | `playback.autoplay` / `automute` / `muted` (state each). **Setup guidance to give if autoplay is wanted on a webpage:** browsers only allow autoplay when muted — set `autoplay:true, automute:true` so the player attempts unmuted first and falls back to muted automatically, or set `muted:true` outright for a guaranteed (silent) autoplay. On iOS, autoplay — even muted — can still require a user gesture (error `1005`); don't recommend forcing it, recommend a "tap to play" UI instead. If the target is a native mobile WebView rather than a browser tab, autoplay additionally needs the *native* WebView configured for it (Android `mediaPlaybackRequiresUserGesture=false`; iOS `mediaTypesRequiringUserActionForPlayback=[]` + `allowsInlineMediaPlayback=true`) — a player config with `autoplay:true` can't fix this on its own from inside a WebView that hasn't set those. | [nanoplayer_autoplay](https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_autoplay) |
-| 4 | Latency control mode | `playback.latencyControlMode` — state the literal value, or "not set → defaults to `balancedadaptive`" (v5 default; v4 default was `classic`). Cross-reference §10: flag if `tweaks.buffer` is also configured under `balancedadaptive`/`fastadaptive`. | [nanoplayer_feature_latency_control_modes](https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_feature_latency_control_modes) |
-| 5 | Player metrics | State plainly: "Set — `accountId`/`accountKey` present" (name which, if either is missing) or "**Not set — no metrics/analytics are sent to the nanocosmos backend for this playback session.**" Absence has no effect on playback; only worth extra comment if it breaks a pattern (e.g. every other config from the same integration has one and this one doesn't). | [nanoplayer_player_metrics](https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_player_metrics) |
+| 1 | MOQ (Media over QUIC) | `playback.enableMediaOverQuic` (Enabled/Disabled, default **true**) and `playback.enableQuicConnectionProbe` (Enabled/Disabled, default **true**) — report both together, they're meant to be paired. If enabled, note whether every custom `h5live.server` entry actually carries a `webtransport` URL (bintu-managed sources already have it); if not, MOQ silently has nothing to run over for that entry and falls back to WebSocket/MSE. | [nanoplayer_feature_moq](https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_feature_moq) |
+| 2 | Fast playback start | `playback.faststart` (Enabled/Disabled, default **true** in v5, was **false** in v4 — flag if a v4-authored config left this unset expecting the old default). If enabled on a multi-entry/ABR source, note whether `startIndex`/`startQuality` is pinned to a conservative (medium/low) tier — faststart + a high-bitrate start on a constrained connection is the documented risk case. | [nanoplayer_feature_fast_start](https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_feature_fast_start) |
+| 3 | Autoplay | `playback.autoplay` / `automute` / `muted` (state each). **Setup guidance to give if autoplay is wanted on a webpage:** browsers only allow autoplay when muted — set `autoplay:true, automute:true` so the player attempts unmuted first and falls back to muted automatically, or set `muted:true` outright for a guaranteed (silent) autoplay. On iOS, autoplay — even muted — can still require a user gesture (error `1005`); don't recommend forcing it, recommend a "tap to play" UI instead. If the target is a native mobile WebView rather than a browser tab, autoplay additionally needs the *native* WebView configured for it (Android `mediaPlaybackRequiresUserGesture=false`; iOS `mediaTypesRequiringUserActionForPlayback=[]` + `allowsInlineMediaPlayback=true`) — a player config with `autoplay:true` can't fix this on its own from inside a WebView that hasn't set those. | [nanoplayer_autoplay](https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_autoplay) |
+| 4 | Latency control mode | `playback.latencyControlMode` — state the literal value, or "not set → defaults to `balancedadaptive`" (v5 default; v4 default was `classic`). Cross-reference §10: flag if `tweaks.buffer` is also configured under `balancedadaptive`/`fastadaptive`. | [nanoplayer_feature_latency_control_modes](https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_feature_latency_control_modes) |
+| 5 | Player metrics | State plainly: "Set — `accountId`/`accountKey` present" (name which, if either is missing) or "**Not set — no metrics/analytics are sent to the nanocosmos backend for this playback session.**" Absence has no effect on playback; only worth extra comment if it breaks a pattern (e.g. every other config from the same integration has one and this one doesn't). | [nanoplayer_player_metrics](https://docs.nanocosmos.net/docs/nanoplayer/nanoplayer_player_metrics) |
 | 6 | ABR | `source.options.adaption.rule` (state the literal value: `none` = manual-switch only, `deviationOfMean`/`deviationOfMean2` = auto-ABR; `deviationOfMean2` is the v5 default if unset) **and** the starting point (`source.startIndex` for entries, `source.group.startQuality` for a group — state which, and whether the two agree if both happen to be present). Then cross-check against the **actual backend stream architecture** using the dedicated ABR architecture table below — don't fold this into a single prose sentence in the row above; always render the full table. | see ABR architecture table below |
 | 7 | Security / JWT | If `group.security.jwtoken` / `entries[].h5live.security.jwtoken` is present, **decode it (base64url header.payload.signature, no key needed — don't verify the signature, just read claims) and report as its own sub-table**: `iss`, `sub`, `aud`, `orgahash`, `tag`, `jti`, `iat`/`nbf`/`exp` converted to human-readable UTC alongside the raw epoch, computed lifetime (`exp - iat`), and current validity (compare `exp` against the actual current time — valid/expired, and if valid, time remaining). Also state `revocable` and `forceDisconnect` plainly, and if `revocable: true`, flag whether the lifetime exceeds the documented 24h cap (§5). If STS-style fields (`security.token`/`.expires`/`.options`/`.tag`) are present instead, report those verbatim — `expires` is already a plain epoch, no decoding needed, just convert to human-readable and check validity the same way. **If no security field is present at all, state that plainly** ("No token in config") rather than omitting the row — this is itself informative, especially on a known secure org (§5). | see §5 |
 
@@ -805,7 +805,7 @@ that the live backend cross-check wasn't performed.
   rather than assuming this reference is exhaustive; player releases add new
   codes.
 
-### Source pages read (all under docs.nanocosmos.de/docs/nanoplayer/ unless noted)
+### Source pages read (all under docs.nanocosmos.net/docs/nanoplayer/ unless noted)
 
 nanoplayer_introduction · nanoplayer_getting_started · nanoplayer_api ·
 nanoplayer_api_errors · nanoplayer_feature_source_defaults ·

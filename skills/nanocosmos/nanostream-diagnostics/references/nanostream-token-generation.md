@@ -36,7 +36,7 @@ Full API reference: https://api.nanostream.cloud/docs/token/#operation/Create%20
 
 ### Step 0: Ensure a Read-Only User Exists (if needed)
 Both methods mint a token that inherits the rights of an existing user — they don't create a new permission level. If the use case needs read-only access and no read-only user exists in the org yet:
-1. Create an invite token for the organization to register a new user with the `nanoReadOnly` role. See https://docs.nanocosmos.de/docs/user_roles for what a read-only user can/can't do (basic stream config, states, metrics, alerts — read-only).
+1. Create an invite token for the organization to register a new user with the `nanoReadOnly` role. See https://docs.nanocosmos.net/docs/user_roles for what a read-only user can/can't do (basic stream config, states, metrics, alerts — read-only).
 2. The invited user completes signup with their own email/password.
 3. Now there's a real read-only account whose credentials/user ID can feed into either method below.
 

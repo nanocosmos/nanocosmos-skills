@@ -1,6 +1,27 @@
 # Changelog
 
-## 0.1.0 — 2026-08-23 (internal review draft — not yet published)
+## 2026-09-26 sync
+
+Cumulative sync of source changes accumulated since 0.1.0 — the changelog
+wasn't updated on every intermediate sync; going forward each sync gets its
+own dated entry here.
+
+- `nanostream-diagnostics` 2.10.0 → 2.20.0 — `check_gop_secure.sh` /
+  `check_gop_unsecure.sh` renamed to `probe_stream_secure.sh` /
+  `probe_stream_unsecure.sh`: now also reports video/audio codec, profile,
+  level, chroma subsampling, resolution and bitrate alongside GOP, not just
+  the keyframe interval. New `ingest-regional-routing-issues.md` reference
+  and `create_access_token.sh` script. Several other reference updates.
+- `nanostream-analytics` 1.1.0 → 1.2.0 — unified `NANOSTREAM_EMAIL` /
+  `NANOSTREAM_PASSWORD` credential precedence across scripts;
+  `NANO_API_TOKEN` accepted as an alternative to email/password login.
+- `nanostream-development` 1.2.6 → 1.3.3 — new `api-authentication.md`
+  reference and `send_test_stream.sh` script.
+- `dark-neutral-studio` 1.0.1 → 1.1.0, `nanostudio` 1.0.0 → 1.0.3 — SKILL.md
+  updates (no detailed per-change history recorded for these two before
+  this changelog was refreshed).
+
+## 0.1.0 — 2026-08-23
 
 Initial generated release candidate:
 
