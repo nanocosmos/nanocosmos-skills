@@ -1,8 +1,9 @@
 # Review notes — internal draft, remove before publication
 
-This repo is a **generated review candidate** (see the private skills repo's
-`PUBLISHING.md`). Nothing here has been pushed anywhere. Before first
-publication:
+This repo is **live on internal GitLab** (updated 2026-09-26) — pushed to
+`origin/main` as part of normal skill maintenance, generated and synced from
+the private skills repo's source per its `PUBLISHING.md`. Remaining open
+items below still apply; this is not yet a public (GitHub) release.
 
 ## Decisions still open (PUBLISHING.md §7)
 1. License — RESOLVED (OL, 2026-08-23): the staged custom proprietary
@@ -10,7 +11,8 @@ publication:
    (Apache-2.0 was rejected earlier the same day: everything is commercial,
    use only with a nanocosmos license per
    https://www.nanocosmos.net/terms). No longer blocks publication.
-2. Hosting — plan: internal GitLab first (private → public), GitHub possibly later.
+2. Hosting — RESOLVED in practice: internal GitLab, as planned (this repo).
+   A public GitHub org remains a possible later addition, not a blocker.
 3. Brand decision — the `nanostream-demo-styling` extract (brand-guidelines
    demo tier) is NOT included in this draft; add later if approved.
 4. Support posture — README currently says issues are for skill mistakes only.
