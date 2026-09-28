@@ -3,7 +3,7 @@
 # Prints a valid Analytics API JWT to stdout.
 #
 #   TOKEN=$(bash scripts/get_token.sh)
-#   curl -H "X-ACCESS-TOKEN: ${TOKEN}" ...
+#   curl -H "x-access-token: ${TOKEN}" ...
 #
 # Analytics tokens are short-lived, so the value is cached in a 0600 file under
 # $TMPDIR and reused until it is within 30s of expiry. Credentials are only
@@ -76,7 +76,7 @@ PY
 )"
 
 RESPONSE="$(curl -sS --max-time 20 -X POST "${ANALYTICS_BASE}/authenticate" \
-  -H 'Content-Type: application/json' \
+  -H 'content-type: application/json' \
   -d "${PAYLOAD}" || true)"
 
 TOKEN="$(printf '%s' "${RESPONSE}" | "${PY}" -c "

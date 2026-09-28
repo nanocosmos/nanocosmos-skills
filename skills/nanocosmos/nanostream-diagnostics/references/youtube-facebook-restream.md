@@ -27,7 +27,7 @@ A customer wants to restream their nanoStream broadcast out to YouTube Live and/
 Both platforms use the same bintu API call — set a **push URL** on the stream, and bintu forwards (restreams) the broadcast to that destination:
 
 ```bash
-curl -H "Content-Type: application/json" -H "X-BINTU-APIKEY: YOUR_BINTU_API_KEY" -X PUT \
+curl -H "content-type: application/json" -H "x-bintu-apikey: YOUR_BINTU_API_KEY" -X PUT \
   -d "{\"url\":\"<destination_rtmp_url>\"}" \
   https://bintu.nanocosmos.de/stream/YOUR_BINTU_STREAM_ID/push_url
 ```
@@ -51,7 +51,7 @@ Facebook requires RTMPS, and bintu supports this restreaming to Facebook with on
 
 ```bash
 curl -X PUT -H "content-type: application/json" \
-  -H "X-BINTU-APIKEY: YOUR_BINTU_API_KEY" \
+  -H "x-bintu-apikey: YOUR_BINTU_API_KEY" \
   -d "{\"url\":\"rtmp://127.0.0.1:8443/rtmp/YOUR_FACEBOOK_STREAM_KEY\"}" \
   https://bintu.nanocosmos.de/stream/YOUR_BINTU_STREAM_ID/push_url
 ```

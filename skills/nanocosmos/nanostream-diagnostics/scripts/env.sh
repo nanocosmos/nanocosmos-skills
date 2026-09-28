@@ -50,7 +50,7 @@ fi
 #
 # Set ENV_SH_REQUIRE_KEY=1 before sourcing for scripts that need the real
 # API key even when a token exists — e.g. minting tokens via CTS, which
-# authenticates with X-BINTU-APIKEY only.
+# authenticates with x-bintu-apikey only.
 if [ -n "${BINTU_API_KEY}" ]; then
   BINTU_AUTH_HEADER="x-bintu-apikey: ${BINTU_API_KEY}"
 elif [ -n "${NANO_API_TOKEN}" ]; then

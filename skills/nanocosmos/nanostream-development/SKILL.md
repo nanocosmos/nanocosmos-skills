@@ -566,7 +566,7 @@ library, and the recommended credential for all API access is an **expiring
 access token** (minted via the Cloud Token Service `POST /bintu/token` or from
 the dashboard login via `POST /user/validate`, max 365 days) instead of the
 never-expiring org API key. Access tokens go in `x-bintu-token` (bintu) /
-`X-ACCESS-TOKEN` (metrics) and are NOT playback tokens. Playback itself never
+`x-access-token` (metrics) and are NOT playback tokens. Playback itself never
 needs API authentication — it is open (unsecured orgs) or gated by
 self-contained JWT playback tokens validated by signature (secured orgs); API
 credentials are only for *managing* streams and reading metrics through the

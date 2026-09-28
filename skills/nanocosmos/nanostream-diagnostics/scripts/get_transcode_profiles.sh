@@ -15,7 +15,7 @@ if [ -z "$1" ]; then
 fi
 
 RESPONSE=$(curl --silent --location "https://bintu.nanocosmos.de/transcoding_profiles" \
---header 'Content-Type: application/json' \
+--header 'content-type: application/json' \
 --header "${BINTU_AUTH_HEADER}")
 
 echo "$RESPONSE"

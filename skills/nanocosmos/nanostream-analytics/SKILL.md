@@ -31,7 +31,7 @@ when it happens.
 
 The Analytics API has **no API key**. It authenticates with the credentials of
 an Analytics dashboard account (`https://metrics.nanostream.cloud`) and returns
-a short-lived JWT sent as the `X-ACCESS-TOKEN` header.
+a short-lived JWT sent as the `x-access-token` header.
 
 Copy `scripts/.env.example` to `.env` and fill in `ANALYTICS_EMAIL` and
 `ANALYTICS_PASSWORD` — your Analytics dashboard login — or export them in
@@ -49,7 +49,7 @@ expires and carries no login.
 24-hour token and ignores expiry fields. For a longer lifetime, mint the token
 with the Cloud Token Service as above (`exp` up to 365 days).
 With `aud: ["bintu","metrics"]` one token drives both APIs:
-`x-bintu-token` header for bintu, `X-ACCESS-TOKEN` for Analytics.
+`x-bintu-token` header for bintu, `x-access-token` for Analytics.
 
 The Analytics login is the same account as the bintu dashboard (one shared
 user database), and the same access token also drives the bintu API —

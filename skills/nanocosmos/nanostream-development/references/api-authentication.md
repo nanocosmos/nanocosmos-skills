@@ -15,7 +15,7 @@ format, signed with the platform key (`kid: nanocosmos`) — what differs is onl
 ```
 login (email+password)  ──┐
                           ├──▶  access token (JWT)  ──▶  bintu API      (x-bintu-token)
-org API key             ──┘     expiring, scoped    ──▶  metrics API    (X-ACCESS-TOKEN)
+org API key             ──┘     expiring, scoped    ──▶  metrics API    (x-access-token)
 ```
 
 The consequence for integrators and for our own tooling: **there are not two
@@ -29,7 +29,7 @@ dashboard login.
 |---|---|---|---|
 | **Org API key** (`x-bintu-apikey`) | never expires | full control of the organisation | Server-side secret store only. Never in a browser, ticket, or client-side code. Its main remaining job: *minting tokens*. |
 | **Login** (email + password) | until changed | the user's role (e.g. nanoAdmin, nanoReadOnly) | A person's dashboard login. Also mints tokens (no API key needed). |
-| **Access token** (JWT; `x-bintu-token` / `X-ACCESS-TOKEN`) | chosen at mint, max 365 days (default 24 h) | ≤ the minting credential; narrowable by audience (`aud`) and user (`iss`) | **The recommended credential for all API access** — services, CI, dashboards, status pages, anything the raw key should never touch. |
+| **Access token** (JWT; `x-bintu-token` / `x-access-token`) | chosen at mint, max 365 days (default 24 h) | ≤ the minting credential; narrowable by audience (`aud`) and user (`iss`) | **The recommended credential for all API access** — services, CI, dashboards, status pages, anything the raw key should never touch. |
 | **Playback token** (JWT; h5live `security` object) | chosen at mint | playback of specific streams / groups / org-wide | Client-facing players on *secured* organisations. Self-contained (validated by signature, no API involved) — a different product, see below. |
 
 > **Do not confuse: access tokens ≠ playback tokens.**
@@ -56,8 +56,8 @@ Authenticates with the org API key.
 
 ```bash
 curl -X POST https://token.nanostream.cloud/bintu/token \
-  -H "X-BINTU-APIKEY: <org api key>" \
-  -H "Content-Type: application/json" \
+  -H "x-bintu-apikey: <org api key>" \
+  -H "content-type: application/json" \
   -d '{
     "exp": 1790261651,          # unix seconds · default 24 h · max 365 days (error 3000 beyond)
     "nbf": 1787669652,          # optional "not before" · default: now
@@ -81,7 +81,7 @@ audience list and the user's role is the scope.
 
 ```bash
 curl -X POST https://bintu.nanocosmos.de/user/validate \
-  -H "Content-Type: application/json" \
+  -H "content-type: application/json" \
   -d '{ "email": "<email>", "password": "<password>", "exp": 1790271095 }'
 ```
 
@@ -103,7 +103,7 @@ longer-lived, mint via 3.1 or 3.2 instead.
 | API | Base URL | Header | Requires audience |
 |---|---|---|---|
 | bintu | `https://bintu.nanostream.cloud` | `x-bintu-token: <jwt>` | `bintu` |
-| metrics / analytics v2 | `https://metrics-api.nanostream.cloud` | `X-ACCESS-TOKEN: <jwt>` | `metrics` |
+| metrics / analytics v2 | `https://metrics-api.nanostream.cloud` | `x-access-token: <jwt>` | `metrics` |
 
 The same token value goes into both headers. There is no documented revocation
 route for bintu access tokens (the revocation machinery covers playback

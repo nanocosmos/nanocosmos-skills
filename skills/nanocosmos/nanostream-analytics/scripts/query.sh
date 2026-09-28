@@ -98,7 +98,7 @@ trap 'rm -f "${BODY_FILE}"' EXIT
 
 set +e
 HTTP="$(curl -sS --max-time 60 -o "${BODY_FILE}" -w '%{http_code}' \
-  -H "X-ACCESS-TOKEN: ${TOKEN}" "${EXTRA_HEADER_ARGS[@]+"${EXTRA_HEADER_ARGS[@]}"}" "${URL}")"
+  -H "x-access-token: ${TOKEN}" "${EXTRA_HEADER_ARGS[@]+"${EXTRA_HEADER_ARGS[@]}"}" "${URL}")"
 set -e
 # curl already emits 000 on a transport failure; guard against an empty value
 HTTP="${HTTP:-000}"

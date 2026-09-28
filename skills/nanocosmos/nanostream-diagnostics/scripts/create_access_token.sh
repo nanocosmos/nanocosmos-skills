@@ -8,7 +8,7 @@
 #references/nanostream-token-generation.md):
 #
 #  default      Cloud Token Service:  POST https://token.nanostream.cloud/bintu/token
-#               (auth: X-BINTU-APIKEY — needs the real org API key).
+#               (auth: x-bintu-apikey — needs the real org API key).
 #               Supports audience scoping (--aud) and user scoping (--iss).
 #  --from-login POST https://bintu.nanocosmos.de/user/validate with the
 #               NANOSTREAM_EMAIL / NANOSTREAM_PASSWORD login (no API key
@@ -19,7 +19,7 @@
 #instead of the raw org API key wherever a credential leaves your shell
 #(services, dashboards, CI, pages). The token goes in the
 #  x-bintu-token   header for the bintu API   (https://bintu.nanostream.cloud)
-#  X-ACCESS-TOKEN  header for the metrics API (https://metrics-api.nanostream.cloud)
+#  x-access-token  header for the metrics API (https://metrics-api.nanostream.cloud)
 #and can also be exported as NANO_API_TOKEN for the scripts in this skill
 #and the analytics skill.
 #
@@ -96,7 +96,7 @@ if [ -n "$FROM_LOGIN" ]; then
     printf "{\"email\": \"%s\", \"password\": \"%s\", \"exp\": %s}" \
       "$BODY_EMAIL" "$BODY_PASSWORD" "$BODY_EXP" |
     curl --silent --location "https://bintu.nanocosmos.de/user/validate" \
-      --header "Content-Type: application/json" --data @-')
+      --header "content-type: application/json" --data @-')
   AUD="(the login user's own role)"
 else
   # ── Method 2 (default): Cloud Token Service with the org API key ─────────
@@ -107,8 +107,8 @@ else
   BODY="${BODY}}"
 
   RESPONSE=$(curl --silent --location "https://token.nanostream.cloud/bintu/token" \
-    --header 'Content-Type: application/json' \
-    --header "X-BINTU-APIKEY: ${BINTU_API_KEY}" \
+    --header 'content-type: application/json' \
+    --header "x-bintu-apikey: ${BINTU_API_KEY}" \
     --data "$BODY")
 fi
 
@@ -128,6 +128,6 @@ fi
 
 EXP_HUMAN=$(date -u -d "@${EXP}" 2>/dev/null || date -u -r "${EXP}" 2>/dev/null)
 echo "access token created: aud=[${AUD}] expires ${EXP_HUMAN} (${EXP})" >&2
-echo "use as: x-bintu-token (bintu API) / X-ACCESS-TOKEN (metrics API) / NANO_API_TOKEN (skill scripts)" >&2
+echo "use as: x-bintu-token (bintu API) / x-access-token (metrics API) / NANO_API_TOKEN (skill scripts)" >&2
 
 echo "$TOKEN"

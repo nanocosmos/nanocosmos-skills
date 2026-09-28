@@ -43,7 +43,7 @@ A customer asks about enabling live captions, transcription, or multi-language t
 
 ```json
 POST /stream/{id}/options
-Headers: X-BINTU-APIKEY: your-api-key
+Headers: x-bintu-apikey: your-api-key
 
 // Transcription only:
 { "name": "captions", "options": { "engine": "deepgram", "sourceLanguage": "en" } }

@@ -43,7 +43,7 @@ MAX_HOPS = 20
 
 def get(path):
     req = urllib.request.Request(API + path, headers={
-        "Content-Type": "application/json", AUTH_NAME: AUTH_VALUE})
+        "content-type": "application/json", AUTH_NAME: AUTH_VALUE})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
 

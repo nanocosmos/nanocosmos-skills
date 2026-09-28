@@ -18,7 +18,7 @@ fi
 STREAM_NAME=$1
 
 RESPONSE=$(curl --silent --location "https://bintu.nanocosmos.de/stream/${STREAM_NAME}" \
---header 'Content-Type: application/json' \
+--header 'content-type: application/json' \
 --header "${BINTU_AUTH_HEADER}")
 
 WEBSOCKET=$(echo "$RESPONSE" | grep -o '"websocket":"[^"]*"' | head -1 | cut -d'"' -f4)

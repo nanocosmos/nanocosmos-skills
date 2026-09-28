@@ -70,7 +70,7 @@ if [ -z "$EXP" ]; then
 fi
 
 JWT_TOKEN=$(curl --silent --location "https://token.nanostream.cloud/api/v1/splay" \
---header 'Content-Type: application/json' \
+--header 'content-type: application/json' \
 --header "x-bintu-apikey: ${BINTU_API_KEY}" \
 --data "{\"orgawide\": true, \"exp\": ${EXP}}")
 

@@ -47,7 +47,7 @@ No API key needed — just the target user's own login. Safer default since it n
 
 ```bash
 curl --location 'https://bintu.nanocosmos.de/user/validate' \
-  --header 'Content-Type: application/json' \
+  --header 'content-type: application/json' \
   --data-raw '{"email":"<user_email>","password":"<user_password>","exp":<epoch_seconds>}'
 ```
 
@@ -59,8 +59,8 @@ Use when the target user's password isn't available — e.g. minting a token on 
 
 ```bash
 curl --location 'https://token.nanostream.cloud/bintu/token' \
-  --header 'X-BINTU-APIKEY: <org_api_key>' \
-  --header 'Content-Type: application/json' \
+  --header 'x-bintu-apikey: <org_api_key>' \
+  --header 'content-type: application/json' \
   --data '{"iss":"<user_id>","exp":<epoch_seconds>,"aud":["bintu","metrics"]}'
 ```
 
@@ -72,7 +72,7 @@ curl --location 'https://token.nanostream.cloud/bintu/token' \
 ### Tokens for the Analytics (metrics) API
 The Analytics API login `POST https://metrics-api.nanostream.cloud/authenticate` always returns a token that expires after **24 hours**. You cannot change this lifetime: the route ignores all expiry fields. For a longer lifetime (up to 365 days), mint the token with the Cloud Token Service (Method 2 above). Put `metrics` in the `aud` array, e.g. `"aud":["metrics"]` for a metrics-only dashboard.
 
-Send the token in the `X-ACCESS-TOKEN` header to the Analytics API.
+Send the token in the `x-access-token` header to the Analytics API.
 
 ### One Token for bintu and Analytics
 One token can call both APIs, because both use the same user accounts. Mint it once with both audiences, then send the same value in two different headers:
@@ -80,20 +80,20 @@ One token can call both APIs, because both use the same user accounts. Mint it o
 ```bash
 # 1. Mint with the Cloud Token Service (Method 2)
 TOKEN=$(curl -s 'https://token.nanostream.cloud/bintu/token' \
-  --header 'X-BINTU-APIKEY: <org_api_key>' \
-  --header 'Content-Type: application/json' \
+  --header 'x-bintu-apikey: <org_api_key>' \
+  --header 'content-type: application/json' \
   --data '{"iss":"<user_id>","exp":<epoch_seconds>,"aud":["bintu","metrics"]}' \
   | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
 # 2. bintu API: header x-bintu-token
 curl -s 'https://bintu.nanostream.cloud/stream?limit=1' --header "x-bintu-token: $TOKEN"
 
-# 3. Analytics API: header X-ACCESS-TOKEN
-curl -s 'https://metrics-api.nanostream.cloud/v2/usage/lastmonth' --header "X-ACCESS-TOKEN: $TOKEN"
+# 3. Analytics API: header x-access-token
+curl -s 'https://metrics-api.nanostream.cloud/v2/usage/lastmonth' --header "x-access-token: $TOKEN"
 ```
 
 ### After Generating
-The response contains the token itself. Send it in the `x-bintu-token` header to the bintu API, and in the `X-ACCESS-TOKEN` header to the Analytics API. The token has a scope and an expiry, so a leaked token does much less damage than a leaked org API key.
+The response contains the token itself. Send it in the `x-bintu-token` header to the bintu API, and in the `x-access-token` header to the Analytics API. The token has a scope and an expiry, so a leaked token does much less damage than a leaked org API key.
 
 ### Customer Response Guidance
 - Never recommend embedding an org-level API key in anything client-facing — steer toward one of these two token methods first.

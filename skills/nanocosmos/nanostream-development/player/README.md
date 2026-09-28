@@ -14,7 +14,7 @@ The minimal counterpart to the diagnostics page: one stream input, Load/Stop, a 
 `player-simple.html` plus one metrics panel: **max concurrent viewers** of the
 played stream, from the nanoStream Analytics API v2
 (`GET https://metrics-api.nanostream.cloud/v2/viewers/concurrent/timeseries`,
-header `X-ACCESS-TOKEN`; the API is CORS-open, verified 2026-08-24). Shows a
+header `x-access-token`; the API is CORS-open, verified 2026-08-24). Shows a
 headline number plus a **2-hour minute-resolution line chart** (inline SVG:
 2px brand-blue line + 10% area wash, crosshair tooltip snapping to the nearest
 minute, clean y-ticks, 30-min x labels, collapsible data table as the no-hover
