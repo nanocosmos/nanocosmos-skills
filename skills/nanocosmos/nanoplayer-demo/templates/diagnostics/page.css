@@ -1,0 +1,6 @@
+/* diagnostics: page-specific rules only. Theme tokens only, no raw hex. */
+
+.player-host {
+  position: absolute;
+  inset: 0;
+}

@@ -9,7 +9,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { checkDemo } from './check-demo.mjs';
 
-export const TYPES = ['single-player', 'feature-showcase', 'multi-player'];
+export const TYPES = ['single-player', 'feature-showcase', 'multi-player', 'diagnostics'];
 
 const SKILL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const WRAPPER_TYPES = new Set(['feature-wrapper']);
