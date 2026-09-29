@@ -1,0 +1,8 @@
+/* single-player: page-specific rules only. Colors and fonts come from
+   product-theme.css tokens; never add raw hex here. */
+
+/* nanoPlayer renders into this div; it fills the theme's 16:10.5 video surface. */
+.player-host {
+  position: absolute;
+  inset: 0;
+}
