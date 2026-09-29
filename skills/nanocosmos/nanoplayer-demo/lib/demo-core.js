@@ -194,9 +194,13 @@
   }
   // Standard status-bar wiring: ui = { badge, badgeText, text, stats? }.
   // An error message stays visible until connecting/playing/idle clears it.
+  // The player pauses right after an error; that pause keeps the Error badge.
   function statusHandlers(ui) {
+    var current = 'idle';
     return {
       onState: function (s) {
+        if (current === 'error' && s === 'paused') { return; }
+        current = s;
         renderStatus(ui.badge, ui.badgeText, s);
         if (s === 'connecting' || s === 'playing' || s === 'idle') { ui.text.textContent = ''; }
         if (s === 'idle' && ui.stats) { ui.stats.textContent = statsLine(null); }

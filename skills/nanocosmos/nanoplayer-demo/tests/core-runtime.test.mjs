@@ -95,6 +95,19 @@ test('statusHandlers keep an error visible until playback recovers', () => {
   assert.equal(ui.stats.textContent, 'Latency — · Bitrate — · Buffer —');
 });
 
+test('statusHandlers keep the Error badge when the player pauses after an error', () => {
+  // Real player: onError ("Could not open connection. Timeout reached.") is followed by onPause.
+  const ui = { badge: fakeEl(), badgeText: fakeEl(), text: fakeEl(), stats: fakeEl() };
+  const h = D.statusHandlers(ui);
+  h.onState('error');
+  h.onState('paused');
+  assert.equal(ui.badgeText.textContent, 'Error');
+  h.onState('connecting');
+  assert.equal(ui.badgeText.textContent, 'Connecting');
+  h.onState('paused');
+  assert.equal(ui.badgeText.textContent, 'Paused');
+});
+
 test('appendLog writes redacted lines and caps the log', () => {
   const box = fakeEl();
   D.appendLog(box, 'onError', 'url ?token=' + JWT);
