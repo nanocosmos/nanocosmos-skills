@@ -67,40 +67,43 @@ never inlined:
   page.css            demo-specific styles only, theme tokens only, no raw hex
 ```
 
-### 5.2 When to add JS modules
+### 5.2 Shared scripts and when to add `js/app.js`
 
-Move JS out of `index.html` into modules when **any** of these is true:
+Every demo carries the shared, tested helper library as a classic script:
 
-- the demo has a reusable wrapper (type G always does),
-- the demo has more than one page,
-- inline JS exceeds ~300 lines.
+    <demo-name>/
+      index.html          markup + inline page wiring
+      product-theme.css   unmodified copy of canonical
+      page.css            demo-specific styles, tokens only
+      js/demo-core.js     NanoDemo helpers (copied unmodified by new-demo.mjs)
 
-```
-<demo-name>/
-  index.html
-  product-theme.css
-  page.css
-  js/
-    player-wrapper.js   the wrapper (ES module)
-    app.js              page wiring: URL params, UI ↔ wrapper
-```
+Page wiring moves from an inline `<script>` into `js/app.js` when any of these
+is true: the demo has a wrapper (type G always does), the demo has more than
+one page, or the inline script exceeds ~300 lines. Wrappers live in
+`js/player-wrapper.js`.
 
-ES modules don't load from `file://`; such demos are run from a static server
-(`npx serve`, `python -m http.server`) or GitLab Pages. Demos with only an
-inline script still open from `file://` (linked CSS files load fine there).
+All scripts are classic scripts (no ES modules), so every demo, wrapper demos
+included, opens from `file://` as well as from any static host.
 
 ### 5.3 Skill layout
 
 ```
 skills/nanocosmos/nanoplayer-demo/
   SKILL.md                    trigger, template picker, rules summary, checklist pointer
+  lib/
+    demo-core.js              NanoDemo: config, events, status, log, report, lifecycle
+    player-wrapper.js         NanoDemo.SwitchPlayer (the worked wrapper example)
+  scripts/
+    new-demo.mjs              scaffold: template + lib + canonical theme copy
+    check-demo.mjs            mechanical checklist rules
   templates/
     single-player/            index.html, page.css
-    feature-showcase/
-    multi-player/
-    diagnostics/
-    branded-page/
-    feature-wrapper/          index.html, page.css, js/player-wrapper.js, js/app.js
+    feature-showcase/         index.html, page.css
+    multi-player/             index.html, page.css
+    diagnostics/              index.html, page.css
+    branded-page/             index.html, page.css, customer-logo.svg
+    feature-wrapper/          index.html, page.css, js/app.js
+  tests/                      node --test suites for lib/ and scripts/
   references/
     best-practices.md         demo rules (§6) with links to nanostream-development
     wrapper-pattern.md        wrapper contract (§7)
@@ -128,7 +131,7 @@ Player usage (detail in `nanostream-development`):
 8. Autoplay implies muted (`autoplay`, `automute`, `muted`).
 
 Demo conventions (owned here):
-9. Standard URL params: `?stream=` (name or UUID, auto-detected), `?token=` (alias `?jwtoken=`), `?server=`. Demo-specific params are documented in the page footer/help.
+9. Standard URL params: `?stream=` (name or UUID, auto-detected), `?token=` (alias `?jwtoken=`), `?server=`. Demo-specific params are documented in the page footer/help. Multi-stream demos add ?streams=a,b,c.
 10. Never embed credentials, API keys or long-lived tokens. Demo JWTs only if expired-acceptable and `exp` checked.
 11. Default stream comes from a single constant at the top of the script.
 12. Copy: functional, label-driven, no marketing CTAs (brand-guidelines product tier).
@@ -141,8 +144,8 @@ Demo conventions (owned here):
 For type G demos. The wrapper hides nanoPlayer behind a small feature-shaped API.
 
 ```js
-// js/player-wrapper.js
-export class SwitchPlayer {            // named after the feature
+// js/player-wrapper.js — classic script, exposes NanoDemo.SwitchPlayer
+function SwitchPlayer(containerId, options)   // named after the feature
   constructor(containerId, options)    // no side effects beyond storing config
   async load(streams)                  // builds config, new NanoPlayer + setup()
   async switchTo(index)                // feature API — uses updateSource/switchStream
