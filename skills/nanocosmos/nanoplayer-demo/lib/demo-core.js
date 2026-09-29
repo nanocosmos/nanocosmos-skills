@@ -259,7 +259,7 @@
   }
 
   // ---- lifecycle ------------------------------------------------------------
-  // There is no player.stop(): destroy() is the real stop.
+  // nanoPlayer has no stop method: destroy() is the real stop.
   function envWindow(env) {
     if (env && env.window) { return env.window; }
     return typeof window !== 'undefined' ? window : null;
