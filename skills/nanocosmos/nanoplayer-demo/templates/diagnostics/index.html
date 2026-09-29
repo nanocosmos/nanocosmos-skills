@@ -114,7 +114,8 @@
   'use strict';
   var D = NanoDemo;
   var LOG_MAX = 300;
-  var params = D.readParams(location.search);
+  var DEFAULT_STREAM = 'CD6oL-2kE1g'; // played when the URL has no ?stream=
+  var params = D.readParams(location.search, { stream: DEFAULT_STREAM });
   var $ = function (id) { return document.getElementById(id); };
   var ui = {
     stream: $('streamInput'), mode: $('modeSelect'),
@@ -152,7 +153,15 @@
   }
   function renderStreamInfo() {
     ui.info.textContent = '';
-    D.flatten(last.streamInfo).forEach(function (r) {
+    var rows = D.flatten(last.streamInfo);
+    if (!rows.length) {
+      var empty = document.createElement('p');
+      empty.className = 'helper';
+      empty.textContent = 'No stream info yet.';
+      ui.info.appendChild(empty);
+      return;
+    }
+    rows.forEach(function (r) {
       var row = document.createElement('div');
       row.className = 'info-row wrap';
       var k = document.createElement('span');
@@ -185,6 +194,15 @@
   });
 
   function load() {
+    // A new load starts a new diagnostics session: no numbers from the previous stream.
+    counters.statsUpdates = 0;
+    counters.bufferingEvents = 0;
+    counters.errors = 0;
+    last.stats = null;
+    last.streamInfo = null;
+    renderCounters();
+    renderStats();
+    renderStreamInfo();
     ctl.load({
       stream: ui.stream.value, token: params.token, server: params.server,
       playback: { latencyControlMode: ui.mode.value }

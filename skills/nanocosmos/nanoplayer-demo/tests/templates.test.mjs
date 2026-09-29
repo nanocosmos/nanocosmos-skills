@@ -15,6 +15,25 @@ function inlineScripts(html) {
   return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 }
 
+const readTemplate = (type, file = 'index.html') =>
+  readFileSync(new URL(`../templates/${type}/${file}`, import.meta.url), 'utf8');
+
+test('every template declares its default stream in one visible constant', () => {
+  for (const type of TYPES) {
+    const code = type === 'feature-wrapper' ? readTemplate(type, 'js/app.js') : readTemplate(type);
+    assert.match(code, /var DEFAULT_STREAMS? = /, `${type} needs a DEFAULT_STREAM(S) constant`);
+  }
+});
+
+test('diagnostics resets counters and last stats/stream info on every load', () => {
+  const html = readTemplate('diagnostics');
+  const body = html.slice(html.indexOf('function load()'), html.indexOf('function flashConfirm'));
+  for (const s of ['counters.statsUpdates = 0', 'counters.bufferingEvents = 0', 'counters.errors = 0',
+    'last.stats = null', 'last.streamInfo = null', 'renderStreamInfo()']) {
+    assert.ok(body.includes(s), 'load() must contain ' + s);
+  }
+});
+
 for (const type of TYPES) {
   test(`${type}: scaffolds and passes check-demo`, () => {
     const dest = join(mkdtempSync(join(tmpdir(), 'npd-tpl-')), type);

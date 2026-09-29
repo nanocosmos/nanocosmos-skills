@@ -19,9 +19,9 @@ don't copy the detail into a demo.
 
 10. URL params: `?stream=` (name or UUID, auto-detected), `?token=` (alias `?jwtoken=`), `?server=`; multi-stream demos add `?streams=a,b,c`. Document them in the page's helper text.
 11. Never ship credentials: no API keys, metrics keys or long-lived tokens in any file. Tokens come from `?token=`, and logs/reports are redacted. `check-demo` flags JWT literals and key assignments.
-12. The default stream is one constant (`DEFAULTS.stream`, or a `DEFAULT_STREAMS` constant at the top of `app.js`).
+12. The default stream is one constant at the top of the page script: `DEFAULT_STREAM` (passed as `readParams(location.search, { stream: DEFAULT_STREAM })`), or `DEFAULT_STREAMS` at the top of `app.js` for multi-stream wrappers. Change it there for the requested stream; never edit `DEFAULTS` in `js/demo-core.js`.
 13. Copy is functional and label-driven. The only marketing links are the standard header pill pair from `product-sample.html`.
-14. Bump the footer version stamp on every change (PATCH for fixes, MINOR for features), with today's date.
+14. The first build ships as `1.0.0` with the scaffold date. After the first handover, bump the footer version stamp on every change (PATCH for fixes, MINOR for features), with today's date.
 15. `<meta name="robots" content="noindex, nofollow">`.
 16. Players are destroyed on `pagehide`, so demos don't leave viewer sessions open (`startPlayer` does it).
 17. Look: link `product-theme.css` unmodified, then `page.css`; tokens only in `page.css`; class selectors only. Details: nanocosmos-brand-guidelines, product tier.

@@ -285,6 +285,7 @@
         '). Check the network connection or an ad blocker.'));
     }
     var player = new Ctor(containerId);
+    if (env.onCreate) { env.onCreate(player); } // lets a caller destroy it before setup settles
     var win = envWindow(env);
     if (win) {
       // Close the session when the tab goes away, so demos don't leave viewers open.
@@ -304,10 +305,20 @@
   // load() never rejects; failures arrive via handlers.onState/onError.
   function createController(containerId, h, env) {
     h = h || {};
-    var player = null;
+    var player = null;   // set up and ready
+    var pending = null;  // built, setup() not settled yet
     var gen = 0;
     function guard(my, fn) {
       return function () { if (my === gen && fn) { return fn.apply(null, arguments); } };
+    }
+    function guardAll(my, fns) {
+      var out = {};
+      Object.keys(fns || {}).forEach(function (name) { out[name] = guard(my, fns[name]); });
+      return out;
+    }
+    function release() {
+      pending = stopPlayer(pending, env);
+      player = stopPlayer(player, env);
     }
     function fail(my, message) {
       if (my !== gen) { return null; }
@@ -319,7 +330,7 @@
       load: function (opts) {
         opts = opts || {};
         var my = ++gen;
-        player = stopPlayer(player, env);
+        release();
         var config;
         try {
           config = buildConfig({
@@ -332,24 +343,31 @@
               onStats: guard(my, h.onStats),
               onStreamInfo: guard(my, h.onStreamInfo),
               onLog: guard(my, h.onLog),
-              extra: opts.extra
+              extra: guardAll(my, opts.extra)
             })
           });
         } catch (err) {
           return Promise.resolve(fail(my, err.message));
         }
         if (h.onState) { h.onState('connecting'); }
-        return startPlayer(containerId, config, env).then(function (p) {
-          if (my !== gen) { stopPlayer(p, env); return null; }
+        var startEnv = {
+          NanoPlayer: env && env.NanoPlayer,
+          window: env && env.window,
+          onCreate: function (p) { pending = p; }
+        };
+        return startPlayer(containerId, config, startEnv).then(function (p) {
+          if (my !== gen) { return null; } // superseded: release() already destroyed it
+          pending = null;
           player = p;
           return p;
         }, function (err) {
+          if (my === gen) { pending = null; } // startPlayer already destroyed it
           return fail(my, err.message);
         });
       },
       stop: function () {
         gen++;
-        player = stopPlayer(player, env);
+        release();
         if (h.onState) { h.onState('idle'); }
       },
       get player() { return player; }

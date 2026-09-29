@@ -54,7 +54,8 @@ pages.
    skill the scaffold stops and says so.
 
 3. **Build the demo.** Edit `index.html` (markup and the inline page wiring,
-   or `js/app.js`) and `page.css`. Never edit `product-theme.css` or
+   or `js/app.js`) and `page.css`. Set the requested stream in the
+   `DEFAULT_STREAM` constant at the top of the page script. Never edit `product-theme.css` or
    `js/demo-core.js` in a demo; fix shared problems in this skill. Follow
    `references/best-practices.md`. For a wrapper, follow
    `references/wrapper-pattern.md`.

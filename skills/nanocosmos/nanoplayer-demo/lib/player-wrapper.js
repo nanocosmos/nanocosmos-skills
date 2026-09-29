@@ -69,6 +69,12 @@
     p.resolve(p.to);
   };
 
+  // A switch the wrapper can't start: tell the page (error event) and the caller.
+  SwitchPlayer.prototype._refuse = function (message) {
+    this._emit('error', { message: message });
+    return Promise.reject(new Error(message));
+  };
+
   SwitchPlayer.prototype.load = function (streams) {
     var self = this;
     if (!Array.isArray(streams) || streams.length === 0) {
@@ -94,8 +100,13 @@
   SwitchPlayer.prototype.switchTo = function (i) {
     var self = this;
     var player = this._ctl.player;
-    if (!player) { return Promise.reject(new Error('Call load() first.')); }
-    if (!(i >= 0 && i < this._streams.length)) { return Promise.reject(new Error('No stream at index ' + i + '.')); }
+    if (!player) {
+      return this._refuse(this._state === 'connecting' || this._state === 'buffering'
+        ? 'Wait until the first stream is playing, then switch.'
+        : 'Call load() first.');
+    }
+    if (!(i >= 0 && i < this._streams.length)) { return this._refuse('No stream at index ' + i + '.'); }
+    // Not an error event: the UI disables switch buttons while a switch runs.
     if (this._pending) { return Promise.reject(new Error('A switch is already in progress.')); }
     if (i === this._index) { return Promise.resolve(i); }
     return new Promise(function (resolve, reject) {

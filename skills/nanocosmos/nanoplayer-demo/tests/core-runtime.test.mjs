@@ -231,6 +231,33 @@ test('createController destroys a player whose setup finishes after stop', async
   assert.deepEqual(r.calls.at(-1), ['state', 'idle']);
 });
 
+test('createController destroys a still-connecting player as soon as a new load starts', async () => {
+  const { FakeNanoPlayer, instances } = fakeNanoPlayerClass({ deferSetup: true });
+  const r = recorder();
+  const ctl = D.createController('player', r, { NanoPlayer: FakeNanoPlayer, window: fakeWindow() });
+  const first = ctl.load({ stream: 'AAAAA-11111' });
+  assert.equal(ctl.player, null, 'no player exposed before setup completes');
+  const second = ctl.load({ stream: 'BBBBB-22222' });
+  assert.equal(instances[0].destroyed, 1, 'first player destroyed before the second is built on the container');
+  instances[0].resolveSetup();
+  instances[1].resolveSetup();
+  assert.equal(await first, null);
+  assert.equal(await second, instances[1]);
+  assert.equal(instances[0].destroyed, 1, 'not destroyed twice');
+  assert.equal(ctl.player, instances[1]);
+});
+
+test('createController ignores extra handlers of a superseded player', async () => {
+  const { FakeNanoPlayer, instances } = fakeNanoPlayerClass();
+  const seen = [];
+  const ctl = D.createController('player', {}, { NanoPlayer: FakeNanoPlayer, window: fakeWindow() });
+  await ctl.load({ stream: 'AAAAA-11111', extra: { onMute: () => seen.push('A') } });
+  await ctl.load({ stream: 'BBBBB-22222', extra: { onMute: () => seen.push('B') } });
+  instances[0].fire('onMute');
+  instances[1].fire('onMute');
+  assert.deepEqual(seen, ['B']);
+});
+
 test('createController stop destroys the player and reports idle', async () => {
   const { FakeNanoPlayer, instances } = fakeNanoPlayerClass();
   const r = recorder();

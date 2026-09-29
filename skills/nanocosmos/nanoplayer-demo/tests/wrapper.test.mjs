@@ -100,6 +100,22 @@ test('switching to the current stream is a no-op; bad calls are rejected', async
   await assert.rejects(sp.switchTo(5), /No stream at index 5/);
 });
 
+test('switching before the first stream plays reports an error instead of a silent no-op', async () => {
+  const { sp, events } = setup({ deferSetup: true });
+  sp.load(STREAMS);
+  await assert.rejects(sp.switchTo(1), /Wait until the first stream is playing/);
+  await assert.rejects(sp.switchTo(9), /Wait until the first stream is playing|No stream at index/);
+  assert.equal(only(events, 'error').length, 2);
+  assert.match(only(events, 'error')[0].message, /Wait until the first stream is playing/);
+});
+
+test('switching to an index that does not exist reports an error', async () => {
+  const { sp, events } = setup();
+  await sp.load(STREAMS);
+  await assert.rejects(sp.switchTo(5), /No stream at index 5/);
+  assert.deepEqual(only(events, 'error'), [{ message: 'No stream at index 5.' }]);
+});
+
 test('destroy stops the player, rejects a pending switch quietly and is idempotent', async () => {
   const { sp, instances, events } = setup();
   await sp.load(STREAMS);

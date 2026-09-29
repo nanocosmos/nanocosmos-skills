@@ -76,7 +76,8 @@
 (function () {
   'use strict';
   var D = NanoDemo;
-  var params = D.readParams(location.search);
+  var DEFAULT_STREAM = 'CD6oL-2kE1g'; // played when the URL has no ?stream=
+  var params = D.readParams(location.search, { stream: DEFAULT_STREAM });
   var $ = function (id) { return document.getElementById(id); };
   var ui = {
     stream: $('streamInput'),
