@@ -137,6 +137,221 @@
     return 'Latency ' + f.latency + ' · Bitrate ' + f.bitrate + ' · Buffer ' + f.buffer;
   }
 
+  // ---- events --------------------------------------------------------------
+  // Events are passed in setup({ events }); never player.on() after setup()
+  // (the SDK can fire onReady/onPlay before a .then() callback runs).
+  function playerEvents(h) {
+    h = h || {};
+    function state(s, e) { if (h.onState) { h.onState(s, e); } }
+    function log(name, e) { if (h.onLog) { h.onLog(name, e); } }
+    function info(e) { if (h.onStreamInfo) { h.onStreamInfo(e && e.data && e.data.streamInfo, e); } }
+    var events = {
+      onReady: function (e) { log('onReady', e); state('connecting', e); },
+      onStreamInfo: function (e) { log('onStreamInfo', e); info(e); },
+      onStreamInfoUpdate: function (e) { log('onStreamInfoUpdate', e); info(e); },
+      onStreamInfoError: function (e) {
+        log('onStreamInfoError', e);
+        state('error', e);
+        if (h.onError) { h.onError('Stream not found or offline: ' + errorMessage(e), e); }
+      },
+      onPlay: function (e) { log('onPlay', e); state('playing', e); },
+      onPause: function (e) { log('onPause', e); state('paused', e); },
+      onStartBuffering: function (e) { log('onStartBuffering', e); state('buffering', e); },
+      onStopBuffering: function (e) { log('onStopBuffering', e); state('playing', e); },
+      onError: function (e) {
+        log('onError', e);
+        state('error', e);
+        if (h.onError) { h.onError(errorMessage(e), e); }
+      },
+      onWarning: function (e) { log('onWarning', e); },
+      onStats: function (e) { if (h.onStats) { h.onStats(e && e.data && e.data.stats, e); } }
+    };
+    var extra = h.extra || {};
+    Object.keys(extra).forEach(function (name) {
+      var base = events[name];
+      var add = extra[name];
+      events[name] = base
+        ? function (e) { base(e); add(e); }
+        : function (e) { log(name, e); add(e); };
+    });
+    return events;
+  }
+
+  // ---- status UI (theme badge classes: paused / loading / playing) ----------
+  var STATUS = {
+    idle: { badge: 'paused', label: 'Idle' },
+    connecting: { badge: 'loading', label: 'Connecting' },
+    buffering: { badge: 'loading', label: 'Buffering' },
+    playing: { badge: 'playing', label: 'Live' },
+    paused: { badge: 'paused', label: 'Paused' },
+    error: { badge: 'paused', label: 'Error' }
+  };
+  function statusView(s) { return STATUS[s] || STATUS.idle; }
+  function renderStatus(badgeEl, labelEl, s) {
+    var v = statusView(s);
+    badgeEl.className = 'badge ' + v.badge;
+    labelEl.textContent = v.label;
+  }
+  // Standard status-bar wiring: ui = { badge, badgeText, text, stats? }.
+  // An error message stays visible until connecting/playing/idle clears it.
+  function statusHandlers(ui) {
+    return {
+      onState: function (s) {
+        renderStatus(ui.badge, ui.badgeText, s);
+        if (s === 'connecting' || s === 'playing' || s === 'idle') { ui.text.textContent = ''; }
+        if (s === 'idle' && ui.stats) { ui.stats.textContent = statsLine(null); }
+      },
+      onError: function (msg) { ui.text.textContent = msg; },
+      onStats: function (stats) { if (ui.stats) { ui.stats.textContent = statsLine(stats); } }
+    };
+  }
+
+  // ---- log + report -------------------------------------------------------
+  function appendLog(box, name, detail, max) {
+    var doc = box.ownerDocument;
+    var line = doc.createElement('div');
+    line.className = 'log-line';
+    var ts = doc.createElement('span');
+    ts.className = 'ts';
+    ts.textContent = new Date().toISOString().slice(11, 23);
+    var evt = doc.createElement('span');
+    evt.className = 'evt';
+    evt.textContent = name + (detail ? ' ' + redact(detail) : '');
+    line.appendChild(ts);
+    line.appendChild(evt);
+    box.appendChild(line);
+    while (box.childNodes.length > (max || 300)) { box.removeChild(box.firstChild); }
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function flatten(obj, prefix, out) {
+    out = out || [];
+    if (!obj || typeof obj !== 'object') { return out; }
+    Object.keys(obj).forEach(function (k) {
+      var key = prefix ? prefix + '.' + k : k;
+      var v = obj[k];
+      if (v && typeof v === 'object' && !Array.isArray(v)) { flatten(v, key, out); }
+      else { out.push([key, Array.isArray(v) ? JSON.stringify(v) : v]); }
+    });
+    return out;
+  }
+
+  // Plain-text report for support tickets. Redacted as a whole.
+  function buildReport(info) {
+    var i = info || {};
+    var lines = [
+      'nanoPlayer demo diagnostics report',
+      'Time (UTC): ' + (i.time || ''),
+      'Page: ' + (i.pageUrl || ''),
+      'User agent: ' + (i.userAgent || ''),
+      'NanoDemo: ' + VERSION,
+      '',
+      '[Config]'
+    ];
+    flatten(i.config).forEach(function (r) { lines.push(r[0] + ': ' + r[1]); });
+    lines.push('', '[Counters]');
+    flatten(i.counters).forEach(function (r) { lines.push(r[0] + ': ' + r[1]); });
+    lines.push('', '[Last stats]', i.lastStats ? JSON.stringify(i.lastStats) : DASH);
+    lines.push('', '[Stream info]', i.streamInfo ? JSON.stringify(i.streamInfo) : DASH);
+    lines.push('', '[Event log]');
+    (i.log || []).forEach(function (l) { lines.push(l); });
+    return redact(lines.join('\n'));
+  }
+
+  // ---- lifecycle ------------------------------------------------------------
+  // There is no player.stop(): destroy() is the real stop.
+  function envWindow(env) {
+    if (env && env.window) { return env.window; }
+    return typeof window !== 'undefined' ? window : null;
+  }
+
+  function stopPlayer(player, env) {
+    if (!player) { return null; }
+    var win = envWindow(env);
+    if (win && player._nanoDemoOnHide) { win.removeEventListener('pagehide', player._nanoDemoOnHide); }
+    try { player.destroy(); } catch (e) { /* destroying twice is harmless */ }
+    return null;
+  }
+
+  function startPlayer(containerId, config, env) {
+    env = env || {};
+    var Ctor = env.NanoPlayer || (typeof NanoPlayer !== 'undefined' ? NanoPlayer : undefined);
+    if (typeof Ctor !== 'function') {
+      return Promise.reject(new Error('nanoPlayer script failed to load (' + CDN_URL +
+        '). Check the network connection or an ad blocker.'));
+    }
+    var player = new Ctor(containerId);
+    var win = envWindow(env);
+    if (win) {
+      // Close the session when the tab goes away, so demos don't leave viewers open.
+      player._nanoDemoOnHide = function () { stopPlayer(player, env); };
+      win.addEventListener('pagehide', player._nanoDemoOnHide);
+    }
+    return player.setup(config).then(function () {
+      return player;
+    }, function (err) {
+      stopPlayer(player, env);
+      throw new Error(errorMessage(err));
+    });
+  }
+
+  // One player slot with load/stop. A newer load() or stop() supersedes an
+  // older load(): the old player is destroyed and its events are ignored.
+  // load() never rejects; failures arrive via handlers.onState/onError.
+  function createController(containerId, h, env) {
+    h = h || {};
+    var player = null;
+    var gen = 0;
+    function guard(my, fn) {
+      return function () { if (my === gen && fn) { return fn.apply(null, arguments); } };
+    }
+    function fail(my, message) {
+      if (my !== gen) { return null; }
+      if (h.onState) { h.onState('error'); }
+      if (h.onError) { h.onError(message); }
+      return null;
+    }
+    return {
+      load: function (opts) {
+        opts = opts || {};
+        var my = ++gen;
+        player = stopPlayer(player, env);
+        var config;
+        try {
+          config = buildConfig({
+            source: buildSource(opts),
+            playback: opts.playback,
+            style: opts.style,
+            events: playerEvents({
+              onState: guard(my, h.onState),
+              onError: guard(my, h.onError),
+              onStats: guard(my, h.onStats),
+              onStreamInfo: guard(my, h.onStreamInfo),
+              onLog: guard(my, h.onLog),
+              extra: opts.extra
+            })
+          });
+        } catch (err) {
+          return Promise.resolve(fail(my, err.message));
+        }
+        if (h.onState) { h.onState('connecting'); }
+        return startPlayer(containerId, config, env).then(function (p) {
+          if (my !== gen) { stopPlayer(p, env); return null; }
+          player = p;
+          return p;
+        }, function (err) {
+          return fail(my, err.message);
+        });
+      },
+      stop: function () {
+        gen++;
+        player = stopPlayer(player, env);
+        if (h.onState) { h.onState('idle'); }
+      },
+      get player() { return player; }
+    };
+  }
+
   return {
     VERSION: VERSION,
     CDN_URL: CDN_URL,
@@ -149,6 +364,16 @@
     errorMessage: errorMessage,
     redact: redact,
     formatStats: formatStats,
-    statsLine: statsLine
+    statsLine: statsLine,
+    playerEvents: playerEvents,
+    statusView: statusView,
+    renderStatus: renderStatus,
+    statusHandlers: statusHandlers,
+    appendLog: appendLog,
+    flatten: flatten,
+    buildReport: buildReport,
+    startPlayer: startPlayer,
+    stopPlayer: stopPlayer,
+    createController: createController
   };
 });
