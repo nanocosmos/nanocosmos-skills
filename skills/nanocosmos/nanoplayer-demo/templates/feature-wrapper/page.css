@@ -1,0 +1,22 @@
+/* feature-wrapper: page-specific rules only. Theme tokens only, no raw hex. */
+
+.player-host {
+  position: absolute;
+  inset: 0;
+}
+
+.switch-panel {
+  padding: 20px;
+}
+.switch-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+/* The stream currently playing. Orange = active state. */
+.btn.is-active {
+  box-shadow: 0 0 0 2px var(--accent-orange);
+}

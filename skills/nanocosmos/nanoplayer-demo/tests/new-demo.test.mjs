@@ -51,3 +51,15 @@ test('findTheme honours explicit path, env var, then skill discovery', () => {
   assert.equal(findTheme(undefined, {}, home), join(skill, 'product-theme.css'));
   assert.equal(findTheme(undefined, {}, tmp('npd-empty-')), null);
 });
+
+test('feature-wrapper also gets the wrapper library, other types do not', () => {
+  const theme = stubTheme();
+  const wrapped = join(tmp('npd-'), 'w');
+  scaffold({ type: 'feature-wrapper', dest: wrapped, theme });
+  assert.equal(readFileSync(join(wrapped, 'js', 'player-wrapper.js'), 'utf8'),
+    readFileSync(new URL('../lib/player-wrapper.js', import.meta.url), 'utf8'));
+  assert.ok(existsSync(join(wrapped, 'js', 'app.js')));
+  const plain = join(tmp('npd-'), 'p');
+  scaffold({ type: 'single-player', dest: plain, theme });
+  assert.ok(!existsSync(join(plain, 'js', 'player-wrapper.js')));
+});
