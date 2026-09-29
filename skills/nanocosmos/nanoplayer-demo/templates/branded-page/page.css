@@ -1,0 +1,36 @@
+/* branded-page: page-specific rules only. Customer identity = logo + copy;
+   colors stay nanocosmos theme tokens (no raw hex, check-demo enforces it). */
+
+.player-host {
+  position: absolute;
+  inset: 0;
+}
+
+.brand-intro {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+}
+.customer-logo {
+  height: 56px;
+  width: auto;
+}
+.brand-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 28px;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+.brand-text {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.brand-note {
+  margin: 0;
+  color: var(--text-muted);
+}
+@media (max-width: 640px) {
+  .brand-intro { flex-direction: column; align-items: flex-start; }
+}

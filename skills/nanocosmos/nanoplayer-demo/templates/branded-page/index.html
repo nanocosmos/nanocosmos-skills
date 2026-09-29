@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;700&family=Source+Sans+3:wght@400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="product-theme.css">
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <img class="logo-lockup" src="https://www.nanocosmos.net/wp-content/uploads/2026/06/nanoStream-logo-V1.webp" alt="nanoStream">
+        <div class="header-divider"></div>
+        <div class="nav-label"><span class="title">{{TITLE}}</span></div>
+      </div>
+      <div class="header-right">
+        <a href="https://dashboard.nanostream.cloud/signup" target="_blank" rel="noopener" class="theme-pill">Start for free</a>
+        <a href="https://www.nanocosmos.net/support/" target="_blank" rel="noopener" class="theme-pill">Contact</a>
+        <img class="brand-mark" src="https://www.nanocosmos.net/wp-content/uploads/2025/03/Nanocosmos_logo_RGB_on-dark-bg.png" alt="nanocosmos">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <section class="panel brand-intro">
+        <img class="customer-logo" src="customer-logo.svg" alt="Customer logo">
+        <div>
+          <h1 class="brand-title">{{TITLE}}</h1>
+          <p class="brand-text">Event or customer description goes here: one or two sentences on what the viewer is watching.</p>
+        </div>
+      </section>
+
+      <section class="panel player-panel">
+        <div class="video-surface"><div id="player" class="player-host"></div></div>
+        <div class="status-bar">
+          <div class="status-left">
+            <span class="badge paused" id="statusBadge"><span class="dot"></span><span id="statusBadgeText">Idle</span></span>
+            <span class="status-text" id="statusText"></span>
+          </div>
+          <div class="status-right" id="statusRight">Latency — · Bitrate — · Buffer —</div>
+        </div>
+      </section>
+
+      <p class="helper brand-note">Powered by nanoStream ultra-low-latency delivery. URL: ?stream= · ?token= · ?server=</p>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>© 2026 <a href="https://www.nanocosmos.net">nanocosmos</a> GmbH</span>
+      <div class="page-version" aria-label="Page version">
+        <span>v<!-- version -->1.0.0<!-- /version --></span>
+        <span aria-hidden="true">·</span>
+        <span>Updated <!-- updated -->{{DATE}}<!-- /updated --></span>
+      </div>
+    </div>
+  </footer>
+
+<script src="https://demo.nanocosmos.de/nanoplayer/api/release/nanoplayer.5.min.js"></script>
+<script src="js/demo-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = NanoDemo;
+  var params = D.readParams(location.search);
+  var $ = function (id) { return document.getElementById(id); };
+  var ctl = D.createController('player', D.statusHandlers({
+    badge: $('statusBadge'), badgeText: $('statusBadgeText'),
+    text: $('statusText'), stats: $('statusRight')
+  }));
+  // Viewer-facing page: no stream form, the stream comes from the URL.
+  ctl.load({ stream: params.stream, token: params.token, server: params.server });
+})();
+</script>
+</body>
+</html>
