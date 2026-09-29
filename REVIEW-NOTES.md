@@ -77,3 +77,14 @@ names (`nanostream-analytics`, not bare `analytics`).
   name) for an outside user.
 - `validate_skills.sh --public` output was clean at generation time; re-run
   after any manual change: `tools/build-public-skills.sh` in the private repo.
+
+## nanoplayer-demo (branch feature/nanoplayer-demo-skill, 2026-09-29)
+- Written here on a branch, NOT yet in the source repo: port it before the next
+  sync or it is overwritten. Check the `<!-- internal -->` marker syntax and the
+  `internal/` stripping against PUBLISHING.md while porting.
+- Public tier: templates depend on `product-theme.css`, which isn't public
+  (open `nanostream-demo-styling` decision above). Until decided, ship
+  templates internal-only.
+- Flagged to nanostream-development's owner: `player/player-demo.html` uses
+  Dark Neutral Studio colors, and `player/README.md` still describes inlined
+  demo CSS (out of date since 2026-09-04).

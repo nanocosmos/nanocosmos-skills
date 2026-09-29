@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased (branch feature/nanoplayer-demo-skill)
+
+- `nanoplayer-demo` 1.0.0 (new): nanoPlayer demo templates (single player,
+  feature showcase, multi-player, diagnostics, branded page, feature wrapper),
+  the tested `NanoDemo` helper library and `SwitchPlayer` wrapper,
+  `new-demo.mjs` / `check-demo.mjs`, best practices and a done-checklist.
+  Templates use `product-theme.css` from `nanocosmos-brand-guidelines`.
+
 ## 2026-09-26 sync
 
 Cumulative sync of source changes accumulated since 0.1.0 — the changelog

@@ -1,13 +1,14 @@
 {
   "name": "nanocosmos",
   "displayName": "nanocosmos skills",
-  "description": "AI-agent skills for the nanocosmos platform: nanoStream development, self-serve diagnostics, analytics queries, nanoStudio production tools, and a dark AV-workbench UI design system",
+  "description": "AI-agent skills for the nanocosmos platform: nanoStream development, nanoPlayer demo building, self-serve diagnostics, analytics queries, nanoStudio production tools, and a dark AV-workbench UI design system",
   "author": { "name": "nanocosmos", "url": "https://www.nanocosmos.net" },
   "homepage": "https://www.nanocosmos.net",
   "license": "SEE LICENSE IN LICENSE",
   "keywords": ["nanocosmos", "nanostream", "nanostudio", "live-streaming", "low-latency", "analytics"],
   "skills": [
     "./skills/nanocosmos/dark-neutral-studio",
+    "./skills/nanocosmos/nanoplayer-demo",
     "./skills/nanocosmos/nanostream-analytics",
     "./skills/nanocosmos/nanostream-development",
     "./skills/nanocosmos/nanostream-diagnostics",

@@ -13,6 +13,7 @@ invocation name.
 | Skill | Use when |
 |---|---|
 | [`nanostream-development`](nanostream-development/) | Building and integrating: ingest with ffmpeg/OBS (RTMP/SRT), playback paths, nanoPlayer configuration, embedding, JWT-secured playback, ABR groups |
+| [`nanoplayer-demo`](nanoplayer-demo/) | Building a player demo for another team: templates, the shared NanoDemo helpers, the wrapper pattern and the done-checklist |
 | [`nanostream-diagnostics`](nanostream-diagnostics/) | "Why is this stream broken": is it really live, GOP/keyframe measurement, stream architecture, token validation, 30+ troubleshooting references |
 | [`nanostream-analytics`](nanostream-analytics/) | Numbers from your own account via the Analytics API: playtime, buffering ratio, latency, startup time, playback errors, usage volumes |
 | [`nanostudio`](nanostudio/) | Real-time production tools: nanoStudio Chroma — server-side chroma-key and multi-brand compositing into nanoStream delivery |
