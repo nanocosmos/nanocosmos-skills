@@ -1,0 +1,29 @@
+/* multi-player: page-specific rules only. Theme tokens only, no raw hex. */
+
+.player-host {
+  position: absolute;
+  inset: 0;
+}
+
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .player-grid { grid-template-columns: 1fr; }
+}
+
+.tile-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.form-note {
+  margin: 12px 0 0;
+}
+.form-note:empty {
+  display: none;
+}
