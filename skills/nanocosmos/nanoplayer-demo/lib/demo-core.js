@@ -132,6 +132,7 @@
     else if (c === 2004) { hint = 'The stream was stopped.'; }
     else if (c === 4006) { hint = 'The switch took too long and timed out.'; }
     else if (c >= 4900 && c <= 4999) { hint = 'Token problem: the JWT is missing, expired or not valid for this stream.'; }
+    else if (c === 5002 || c === 5003) { hint = 'This browser does not support this playback; try a current Chrome, Firefox, Edge or Safari.'; }
     else if (c >= 5001 && c <= 5010) { hint = 'Player setup failed: check PLAYER_CONFIG.'; }
     if (!hint) { return m || (code != null && isFinite(c) ? 'Player error ' + c : 'Unknown player error'); }
     return hint + ' (' + c + (m ? ': ' + m : '') + ')';

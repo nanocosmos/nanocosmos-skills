@@ -13,7 +13,7 @@ const skill = read('SKILL.md');
 
 test('SKILL.md frontmatter names the skill', () => {
   assert.match(skill, /^---\r?\nname: nanoplayer-demo\r?\n/);
-  assert.match(skill, /\n {2}version: 1\.0\.0\r?\n/);
+  assert.match(skill, /\n {2}version: 2\.0\.0\r?\n/);
 });
 
 test('SKILL.md lists every template type', () => {
@@ -36,4 +36,18 @@ test('wrapper-pattern.md documents the SwitchPlayer API', () => {
   for (const name of ['load(', 'switchTo(', 'destroy(', "on('", 'switching', 'switched', 'createController']) {
     assert.ok(doc.includes(name), 'missing ' + name);
   }
+});
+
+test('best-practices cites the nanoPlayer docs for its player rules', () => {
+  const doc = read('references/best-practices.md');
+  const cites = doc.match(/docs\/nanoplayer\/nanoplayer_[a-z_]+\.mdx?/g) || [];
+  assert.ok(cites.length >= 8, 'expected at least 8 nano-docs citations, got ' + cites.length);
+  for (const topic of ['startQuality', 'setAdaption', 'switchStream', 'onSwitchStream', '1005', '4901', 'UNVERIFIED', 'fastStart']) {
+    assert.ok(doc.includes(topic), 'best-practices missing ' + topic);
+  }
+});
+
+test('wrapper-pattern documents the group-based SwitchPlayer', () => {
+  const doc = read('references/wrapper-pattern.md');
+  for (const part of ['config:', 'source.group.id', 'GROUPS']) assert.ok(doc.includes(part), 'missing ' + part);
 });

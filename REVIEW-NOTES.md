@@ -88,3 +88,8 @@ names (`nanostream-analytics`, not bare `analytics`).
 - Flagged to nanostream-development's owner: `player/player-demo.html` uses
   Dark Neutral Studio colors, and `player/README.md` still describes inlined
   demo CSS (out of date since 2026-09-04).
+
+- (v2, 2026-10-02) Flag to nanostream-development's owner: its SKILL.md says
+  "keep treating a UUID as the trigger for source.group and XXXXX-YYYYY as the
+  trigger for source.entries — that split is still the right default". The
+  player team's rule (nanoplayer-demo v2) is group-by-default; align it.

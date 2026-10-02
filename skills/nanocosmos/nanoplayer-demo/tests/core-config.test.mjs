@@ -117,7 +117,9 @@ test('errorText gives readable text for documented code ranges', () => {
   assert.match(D.errorText(2001, 'x'), /^Stream not found: check the group ID or stream name\. \(2001: x\)$/);
   assert.match(D.errorText(4901), /^Token problem: .* \(4901\)$/);
   assert.match(D.errorText(1005), /press play/);
-  assert.match(D.errorText(5003, 'bad'), /check PLAYER_CONFIG/);
+  assert.match(D.errorText(5004, 'bad'), /check PLAYER_CONFIG/);
+  assert.match(D.errorText(5002), /^This browser does not support this playback/);
+  assert.match(D.errorText(5003), /^This browser does not support this playback/);
   assert.equal(D.errorText(3100, 'Media error'), 'Media error');
   assert.equal(D.errorText(undefined, ''), 'Unknown player error');
   assert.equal(D.errorText(3100, ''), 'Player error 3100');

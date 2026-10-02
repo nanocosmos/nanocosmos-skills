@@ -2,6 +2,12 @@
 
 ## Unreleased (branch feature/nanoplayer-demo-skill)
 
+- `nanoplayer-demo` 2.0.0: demos play by `source.group.id` by default
+  (`?stream=` opt-in), carry their whole nanoPlayer config as a commented
+  `PLAYER_CONFIG` plus an on-page Configuration panel (copyable, tokens
+  redacted), and follow the nanoPlayer 5.0.13 docs (startQuality, autoplay
+  with automute, letterbox, no hardcoded serverDomain, bitrate in bit/s,
+  buffer delay vs target, readable error codes). Breaking helper API change.
 - `nanoplayer-demo` 1.0.0 (new): nanoPlayer demo templates (single player,
   feature showcase, multi-player, diagnostics, branded page, feature wrapper),
   the tested `NanoDemo` helper library and `SwitchPlayer` wrapper,
