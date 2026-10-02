@@ -113,13 +113,26 @@ test('configJson pretty-prints without events and redacts every jwtoken value', 
   assert.ok(D.configJson([{ label: 'A', config: c }]).includes('"label": "A"'));
 });
 
+test('redact removes jwtoken values inside JSON, JWT-shaped or not', () => {
+  const out = D.redact('{"config":{"source":{"group":{"security":{"jwtoken":"mysecret123"}}}},"x":{"jwtoken" : "other"}}');
+  assert.ok(!out.includes('mysecret123') && !out.includes('other'));
+  assert.ok(out.includes('"jwtoken":"[redacted]"'));
+  assert.equal(D.redact('{"jwtoken":""}'), '{"jwtoken":""}');
+});
+
 test('errorText gives readable text for documented code ranges', () => {
   assert.match(D.errorText(2001, 'x'), /^Stream not found: check the group ID or stream name\. \(2001: x\)$/);
-  assert.match(D.errorText(4901), /^Token problem: .* \(4901\)$/);
+  assert.match(D.errorText(4901), /^Token problem: the JWT is invalid\. Pass a valid one with \?token=\. \(4901\)$/);
+  assert.match(D.errorText(4903), /^Token problem: the JWT is missing or expired\. Pass one with \?token=\./);
+  assert.match(D.errorText(5006), /needs a token: pass one with \?token=/);
+  assert.match(D.errorText(4900), /^The token service had an internal error/);
+  assert.match(D.errorText(4904), /^The token service could not be found/);
+  assert.ok(!/^Token problem/.test(D.errorText(4900)) && !/^Token problem/.test(D.errorText(4904)));
   assert.match(D.errorText(1005), /press play/);
   assert.match(D.errorText(5004, 'bad'), /check PLAYER_CONFIG/);
+  assert.match(D.errorText(5001), /exception: check PLAYER_CONFIG and the page's event handlers/);
   assert.match(D.errorText(5002), /^This browser does not support this playback/);
-  assert.match(D.errorText(5003), /^This browser does not support this playback/);
+  assert.match(D.errorText(5003), /^A forced playback tech is not supported by this browser/);
   assert.equal(D.errorText(3100, 'Media error'), 'Media error');
   assert.equal(D.errorText(undefined, ''), 'Unknown player error');
   assert.equal(D.errorText(3100, ''), 'Player error 3100');

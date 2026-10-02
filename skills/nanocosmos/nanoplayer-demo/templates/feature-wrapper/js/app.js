@@ -38,6 +38,9 @@
   };
 
   // Groups to switch between; the label is shown on the buttons. URL: ?groups=a,b
+  // UNVERIFIED: 'HX26g-YVe8D' is a stream name used as group.id. It resolved a
+  // group in nanostream-development's test, but the docs define group.id as a
+  // bintu group ID: replace it with a real second group before sharing.
   var GROUPS = [
     { label: 'Group A', id: 'b6638d50-3581-4349-8fb2-59b3406c2dde' },
     { label: 'Group B', id: 'HX26g-YVe8D' }
@@ -124,7 +127,8 @@
     }
     renderButtons(list);
     panel.render(D.withSourceId(config, list[0].id));
-    sp.load(list);
+    // Refusals and failures arrive as 'error' events; nothing else to do here.
+    sp.load(list).catch(function () {});
   }
 
   var urlGroups = parseList(new URLSearchParams(location.search).get('groups'));

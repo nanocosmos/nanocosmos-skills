@@ -22,6 +22,7 @@
   var STREAM_NAME_RE = /^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/;
   var JWT_RE = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
   var TOKEN_PARAM_RE = /([?&](?:token|jwtoken)=)[^&#\s"'<>]*/gi;
+  var TOKEN_JSON_RE = /("jwtoken"\s*:\s*")[^"]+/g; // event payloads carry the config, token included
   var DASH = '\u2014';
 
   // Deep copy of plain config data; functions (event handlers) stay by reference.
@@ -131,9 +132,16 @@
     else if (c === 2002 || c === 2003) { hint = 'No media: the stream is not sending video or audio right now.'; }
     else if (c === 2004) { hint = 'The stream was stopped.'; }
     else if (c === 4006) { hint = 'The switch took too long and timed out.'; }
-    else if (c >= 4900 && c <= 4999) { hint = 'Token problem: the JWT is missing, expired or not valid for this stream.'; }
-    else if (c === 5002 || c === 5003) { hint = 'This browser does not support this playback; try a current Chrome, Firefox, Edge or Safari.'; }
-    else if (c >= 5001 && c <= 5010) { hint = 'Player setup failed: check PLAYER_CONFIG.'; }
+    else if (c === 4900) { hint = 'The token service had an internal error; try again later.'; }
+    else if (c === 4901) { hint = 'Token problem: the JWT is invalid. Pass a valid one with ?token=.'; }
+    else if (c === 4903) { hint = 'Token problem: the JWT is missing or expired. Pass one with ?token=.'; }
+    else if (c === 4904) { hint = 'The token service could not be found.'; }
+    else if (c > 4900 && c <= 4999) { hint = 'Token problem: check the JWT passed with ?token=.'; }
+    else if (c === 5001) { hint = 'Player setup threw an exception: check PLAYER_CONFIG and the page\'s event handlers.'; }
+    else if (c === 5002) { hint = 'This browser does not support this playback; try a current Chrome, Firefox, Edge or Safari.'; }
+    else if (c === 5003) { hint = 'A forced playback tech is not supported by this browser.'; }
+    else if (c === 5006) { hint = 'This stream needs a token: pass one with ?token=.'; }
+    else if (c >= 5004 && c <= 5010) { hint = 'Player setup failed: check PLAYER_CONFIG.'; }
     if (!hint) { return m || (code != null && isFinite(c) ? 'Player error ' + c : 'Unknown player error'); }
     return hint + ' (' + c + (m ? ': ' + m : '') + ')';
   }
@@ -150,6 +158,7 @@
   function redact(text) {
     return String(text == null ? '' : text)
       .replace(TOKEN_PARAM_RE, '$1[redacted]')
+      .replace(TOKEN_JSON_RE, '$1[redacted]')
       .replace(JWT_RE, '[redacted]');
   }
 

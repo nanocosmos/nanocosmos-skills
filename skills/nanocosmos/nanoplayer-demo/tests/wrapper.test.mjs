@@ -43,6 +43,18 @@ test('load plays the first group with the page config and reports states', async
   assert.equal(sp.index, 0);
 });
 
+test('load refusals are reported as error events, not only rejections', async () => {
+  const cfg = pageConfig();
+  delete cfg.source.group;
+  cfg.source.entries = [{ h5live: { rtmp: { streamname: 'ABCDE-12345' }, security: {} } }];
+  const { sp, events } = setup(undefined, cfg);
+  await assert.rejects(sp.load(GROUPS), /needs source\.group/);
+  assert.match(only(events, 'error')[0].message, /SwitchPlayer switches between groups/);
+  const empty = setup();
+  await assert.rejects(empty.sp.load([]), /at least one group/);
+  assert.equal(only(empty.events, 'error').length, 1);
+});
+
 test('load rejects an empty list and a config without source.group', async () => {
   const { sp } = setup();
   await assert.rejects(sp.load([]), /at least one group/);

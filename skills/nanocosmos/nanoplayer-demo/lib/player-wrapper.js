@@ -83,10 +83,10 @@
   SwitchPlayer.prototype.load = function (groups) {
     var self = this;
     if (!Array.isArray(groups) || groups.length === 0) {
-      return Promise.reject(new Error('SwitchPlayer.load needs at least one group.'));
+      return this._refuse('SwitchPlayer.load needs at least one group.');
     }
     if (!this._config || !this._config.source || !this._config.source.group) {
-      return Promise.reject(new Error('SwitchPlayer switches between groups: PLAYER_CONFIG needs source.group.'));
+      return this._refuse('SwitchPlayer switches between groups: PLAYER_CONFIG needs source.group (?stream= is not supported here).');
     }
     this._settle('superseded by load()', true);
     this._groups = groups.slice();
