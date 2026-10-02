@@ -1,7 +1,9 @@
 /* nanoplayer-demo wrapper example: NanoDemo.SwitchPlayer.
  *
- * Presents nanoPlayer as a "switch player": load a list of streams, switch
- * between them in place with updateSource() (no teardown, no black frame).
+ * Presents nanoPlayer as a "switch player": load a list of stream groups,
+ * switch between them in place with updateSource() (no teardown, no black
+ * frame). The page's PLAYER_CONFIG stays the single source of player
+ * options; the wrapper only swaps source.group.id.
  * Copy this file as the starting point for any feature wrapper; see
  * references/wrapper-pattern.md for the contract.
  *
@@ -17,10 +19,12 @@
   var SWITCH_FAIL_EVENTS = ['onUpdateSourceFail', 'onUpdateSourceError', 'onUpdateSourceTimeout',
     'onUpdateSourceAbort', 'onUpdateSourceInvalid'];
 
+  // options = { config: the page's PLAYER_CONFIG (after applyUrlParams), env? }
   function SwitchPlayer(containerId, options) {
     var self = this;
     this._opts = options || {};
-    this._streams = [];
+    this._config = this._opts.config;
+    this._groups = [];
     this._index = -1;
     this._pending = null; // { to, resolve, reject } while a switch is in flight
     this._state = 'idle';
@@ -49,8 +53,8 @@
     this._emit('state', { state: s });
   };
 
-  SwitchPlayer.prototype._source = function (i) {
-    return core.buildSource({ stream: this._streams[i].stream, token: this._opts.token, server: this._opts.server });
+  SwitchPlayer.prototype._configFor = function (i) {
+    return core.withSourceId(this._config, this._groups[i].id);
   };
 
   // First outcome wins; later success/fail events for the same switch are ignored.
@@ -75,26 +79,23 @@
     return Promise.reject(new Error(message));
   };
 
-  SwitchPlayer.prototype.load = function (streams) {
+  // groups = [{ label, id }]; plays groups[0] with the page config.
+  SwitchPlayer.prototype.load = function (groups) {
     var self = this;
-    if (!Array.isArray(streams) || streams.length === 0) {
-      return Promise.reject(new Error('SwitchPlayer.load needs at least one stream.'));
+    if (!Array.isArray(groups) || groups.length === 0) {
+      return Promise.reject(new Error('SwitchPlayer.load needs at least one group.'));
+    }
+    if (!this._config || !this._config.source || !this._config.source.group) {
+      return Promise.reject(new Error('SwitchPlayer switches between groups: PLAYER_CONFIG needs source.group.'));
     }
     this._settle('superseded by load()', true);
-    this._streams = streams.slice();
+    this._groups = groups.slice();
     this._index = 0;
     var extra = { onUpdateSourceSuccess: function () { self._settle(null); } };
     SWITCH_FAIL_EVENTS.forEach(function (name) {
       extra[name] = function (e) { self._settle(core.errorMessage(e)); };
     });
-    return this._ctl.load({
-      stream: streams[0].stream,
-      token: this._opts.token,
-      server: this._opts.server,
-      playback: this._opts.playback,
-      style: this._opts.style,
-      extra: extra
-    }).then(function (player) { return player !== null; });
+    return this._ctl.load(this._configFor(0), extra).then(function (player) { return player !== null; });
   };
 
   SwitchPlayer.prototype.switchTo = function (i) {
@@ -102,10 +103,10 @@
     var player = this._ctl.player;
     if (!player) {
       return this._refuse(this._state === 'connecting' || this._state === 'buffering'
-        ? 'Wait until the first stream is playing, then switch.'
+        ? 'Wait until the first group is playing, then switch.'
         : 'Call load() first.');
     }
-    if (!(i >= 0 && i < this._streams.length)) { return this._refuse('No stream at index ' + i + '.'); }
+    if (!(i >= 0 && i < this._groups.length)) { return this._refuse('No group at index ' + i + '.'); }
     // Not an error event: the UI disables switch buttons while a switch runs.
     if (this._pending) { return Promise.reject(new Error('A switch is already in progress.')); }
     if (i === this._index) { return Promise.resolve(i); }
@@ -114,7 +115,7 @@
       self._emit('switching', { from: self._index, to: i });
       // onUpdateSource* events are the authority for the outcome; a rejected
       // promise (bad source, player gone) fails the switch too.
-      player.updateSource(self._source(i)).then(null, function (err) {
+      player.updateSource(self._configFor(i).source).then(null, function (err) {
         self._settle(core.errorMessage(err));
       });
     });
@@ -128,6 +129,10 @@
 
   Object.defineProperty(SwitchPlayer.prototype, 'state', { get: function () { return this._state; } });
   Object.defineProperty(SwitchPlayer.prototype, 'index', { get: function () { return this._index; } });
+  // The config currently playing (for the Configuration panel).
+  Object.defineProperty(SwitchPlayer.prototype, 'config', {
+    get: function () { return this._index >= 0 ? this._configFor(this._index) : this._config; }
+  });
 
   return { SwitchPlayer: SwitchPlayer };
 });
