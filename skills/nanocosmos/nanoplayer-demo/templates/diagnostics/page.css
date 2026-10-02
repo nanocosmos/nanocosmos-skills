@@ -4,3 +4,26 @@
   position: absolute;
   inset: 0;
 }
+
+/* Configuration panel (theme .raw-toggle / .raw-payload pattern). */
+.config-panel {
+  padding: 20px;
+}
+.config-actions {
+  margin-top: 12px;
+  align-items: center;
+}
+.is-hidden {
+  display: none;
+}
+
+/* Support ticket line; empty when no ?ticket= is given. */
+.ticket-line {
+  margin: 0 0 12px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ticket-line:empty {
+  display: none;
+}

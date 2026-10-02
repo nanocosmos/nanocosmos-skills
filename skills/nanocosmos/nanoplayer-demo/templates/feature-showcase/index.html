@@ -34,15 +34,15 @@
       <section class="panel feature-panel">
         <h2>About this feature</h2>
         <p>Latency control mode sets how tightly the player holds to the live edge. All three modes are low latency; none of them is a latency value in seconds.</p>
-        <p>Change a setting below: the player restarts with the new configuration, and the status bar shows the effect on latency and buffer.</p>
+        <p>Watch "Buffer delay" against its "target" in the status bar: fastadaptive aims for the smallest buffer, classic keeps the most. Changing a setting restarts the player with the new configuration; the Configuration panel below shows exactly what changed.</p>
       </section>
 
       <section class="panel form-panel">
         <div class="field">
-          <label for="streamInput">Stream name or group ID</label>
+          <label for="sourceInput" id="sourceLabel">Group ID</label>
           <div class="field-control">
-            <input type="text" id="streamInput" autocomplete="off" spellcheck="false">
-            <span class="helper">URL: ?stream= · ?token= · ?server=</span>
+            <input type="text" id="sourceInput" autocomplete="off" spellcheck="false">
+            <span class="helper">URL: ?group= · ?token= · ?stream=XXXXX-YYYYY · ?server=</span>
           </div>
         </div>
         <div class="field">
@@ -50,23 +50,23 @@
           <div class="field-control">
             <select id="modeSelect">
               <option value="fastadaptive">fastadaptive: closest to the live edge</option>
-              <option value="balancedadaptive" selected>balancedadaptive: default balance</option>
+              <option value="balancedadaptive">balancedadaptive: default balance</option>
               <option value="classic">classic: smoothest playback</option>
             </select>
           </div>
         </div>
         <div class="checkbox-row">
           <div class="checkbox-item">
-            <input type="checkbox" id="cbMoq" checked>
-            <label for="cbMoq">Media over QUIC (MOQ)</label>
+            <input type="checkbox" id="cbMoq">
+            <label for="cbMoq">Media over QUIC (MoQ)</label>
           </div>
           <div class="checkbox-item">
-            <input type="checkbox" id="cbFastStart" checked>
+            <input type="checkbox" id="cbFastStart">
             <label for="cbFastStart">Fast start</label>
           </div>
         </div>
         <div class="button-row">
-          <button class="btn btn-primary" id="btnLoad">Load Stream</button>
+          <button class="btn btn-primary" id="btnLoad">Load</button>
           <button class="btn btn-secondary" id="btnStop">Stop</button>
         </div>
       </section>
@@ -78,7 +78,18 @@
             <span class="badge paused" id="statusBadge"><span class="dot"></span><span id="statusBadgeText">Idle</span></span>
             <span class="status-text" id="statusText"></span>
           </div>
-          <div class="status-right" id="statusRight">Latency — · Bitrate — · Buffer —</div>
+          <div class="status-right" id="statusRight">Bitrate — · Buffer delay — (target —)</div>
+        </div>
+      </section>
+
+      <section class="panel config-panel" id="configPanel">
+        <button class="raw-toggle" id="configToggle" aria-expanded="false" aria-controls="configJson">
+          <span>Configuration: what nanoPlayer receives (copy it into your page)</span><span class="chevron">›</span>
+        </button>
+        <pre class="raw-payload" id="configJson">—</pre>
+        <div class="button-row config-actions">
+          <button class="btn btn-secondary" id="btnCopyConfig">Copy configuration</button>
+          <span class="copy-confirm" id="configCopied">Copied</span>
         </div>
       </section>
 
@@ -101,34 +112,91 @@
 <script>
 (function () {
   'use strict';
+  // ── Player configuration ────────────────────────────────────────────────
+  // This object is what nanoPlayer receives (the demo only adds event
+  // handlers). Edit it to change the demo; the Configuration panel on the
+  // page shows the result and lets you copy it.
+  // Reference: https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api
+  var PLAYER_CONFIG = {
+    source: {
+      group: {
+        id: 'b6638d50-3581-4349-8fb2-59b3406c2dde', // bintu stream group (ABR). URL: ?group=
+        startQuality: 'medium', // high | medium-high | medium | medium-low | low (default low)
+        security: {}            // secure playback: { jwtoken: '…' }. URL: ?token=
+        // apiurl: 'https://bintu.nanocosmos.de' // optional, this is the default
+      },
+      options: {
+        adaption: { rule: 'deviationOfMean2' }, // ABR on. 'none' = keep the start quality
+        switch: { method: 'server', pauseOnError: false, forcePlay: true, timeout: 20 }
+      }
+    },
+    playback: {
+      autoplay: true,
+      automute: true,  // if the browser blocks sound, start muted instead of not at all
+      muted: false,    // try with sound first
+      faststart: true,
+      enableMediaOverQuic: true, // MoQ where the browser supports it, else WebSocket
+      latencyControlMode: 'balancedadaptive' // classic | fastadaptive | balancedadaptive
+    },
+    style: {
+      width: '100%', height: '100%', // fills the page's video area
+      scaling: 'letterbox',          // letterbox | fill | crop
+      controls: false                // the demo has its own controls
+    }
+  };
+
   var D = NanoDemo;
-  var DEFAULT_STREAM = 'CD6oL-2kE1g'; // played when the URL has no ?stream=
-  var params = D.readParams(location.search, { stream: DEFAULT_STREAM });
   var $ = function (id) { return document.getElementById(id); };
   var ui = {
-    stream: $('streamInput'), mode: $('modeSelect'), moq: $('cbMoq'), fast: $('cbFastStart'),
+    source: $('sourceInput'), sourceLabel: $('sourceLabel'),
+    mode: $('modeSelect'), moq: $('cbMoq'), fast: $('cbFastStart'),
     badge: $('statusBadge'), badgeText: $('statusBadgeText'),
     text: $('statusText'), stats: $('statusRight')
   };
-  var ctl = D.createController('player', D.statusHandlers(ui));
+  var status = D.statusHandlers(ui);
+  var ctl = D.createController('player', status);
+  var panel = D.mountConfigPanel({
+    toggle: $('configToggle'), pre: $('configJson'), copy: $('btnCopyConfig'), confirm: $('configCopied')
+  });
   var running = false;
 
-  function load() {
-    running = true;
-    ctl.load({
-      stream: ui.stream.value, token: params.token, server: params.server,
+  var config;
+  try {
+    config = D.applyUrlParams(PLAYER_CONFIG, location.search);
+  } catch (err) {
+    status.onState('error');
+    status.onError(err.message);
+    panel.render(PLAYER_CONFIG);
+    return;
+  }
+
+  // The controls write into the config; nothing else changes it.
+  function controlsOverride() {
+    return {
       playback: {
         latencyControlMode: ui.mode.value,
         enableMediaOverQuic: ui.moq.checked,
         faststart: ui.fast.checked
       }
-    });
+    };
   }
 
-  ui.stream.value = params.stream;
+  function load() {
+    config = D.mergeConfig(D.withSourceId(config, ui.source.value), controlsOverride());
+    panel.render(config);
+    running = true;
+    ctl.load(config);
+  }
+
+  ui.sourceLabel.textContent = config.source.group ? 'Group ID' : 'Stream name';
+  ui.source.value = D.sourceId(config);
+  ui.mode.value = config.playback.latencyControlMode;
+  ui.moq.checked = config.playback.enableMediaOverQuic !== false;
+  ui.fast.checked = config.playback.faststart !== false;
+
   $('btnLoad').addEventListener('click', load);
   $('btnStop').addEventListener('click', function () { running = false; ctl.stop(); });
-  ui.stream.addEventListener('keydown', function (e) { if (e.key === 'Enter') { load(); } });
+  ui.source.addEventListener('keydown', function (e) { if (e.key === 'Enter') { load(); } });
   // Setup-time options: apply by restarting the player.
   [ui.mode, ui.moq, ui.fast].forEach(function (control) {
     control.addEventListener('change', function () { if (running) { load(); } });

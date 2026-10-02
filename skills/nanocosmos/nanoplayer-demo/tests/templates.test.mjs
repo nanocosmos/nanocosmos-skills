@@ -18,20 +18,49 @@ function inlineScripts(html) {
 const readTemplate = (type, file = 'index.html') =>
   readFileSync(new URL(`../templates/${type}/${file}`, import.meta.url), 'utf8');
 
-test('every template declares its default stream in one visible constant', () => {
-  for (const type of TYPES) {
-    const code = type === 'feature-wrapper' ? readTemplate(type, 'js/app.js') : readTemplate(type);
-    assert.match(code, /var DEFAULT_STREAMS? = /, `${type} needs a DEFAULT_STREAM(S) constant`);
-  }
-});
+const DEFAULT_GROUP = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
+const MUTED = { 'multi-player': true, 'branded-page': true };
+const pageCode = (type) => type === 'feature-wrapper' ? readTemplate(type, 'js/app.js') : readTemplate(type);
 
-test('diagnostics resets counters and last stats/stream info on every load', () => {
+for (const type of TYPES) {
+  test(`${type}: explicit PLAYER_CONFIG plays the default group`, () => {
+    const code = pageCode(type);
+    const block = code.slice(code.indexOf('var PLAYER_CONFIG = {'), code.indexOf('};', code.indexOf('var PLAYER_CONFIG = {')));
+    assert.ok(block.length > 0, 'PLAYER_CONFIG literal');
+    for (const part of ['group: {', "id: '" + DEFAULT_GROUP + "'", "startQuality: 'medium'", 'security: {}',
+      "rule: 'deviationOfMean2'", "method: 'server'", 'timeout: 20', 'autoplay: true', 'automute: true',
+      'faststart: true', 'enableMediaOverQuic: true', "latencyControlMode: 'balancedadaptive'", "scaling: 'letterbox'"]) {
+      assert.ok(block.includes(part), `${type} PLAYER_CONFIG missing ${part}`);
+    }
+    assert.ok(block.includes(MUTED[type] ? 'muted: true' : 'muted: false'), `${type} audio default`);
+    assert.ok(!/serverDomain|startIndex|defaults:/.test(block), 'no serverDomain/startIndex/defaults in a group config');
+    assert.ok(code.includes('D.applyUrlParams(PLAYER_CONFIG, location.search)'), 'URL params applied visibly');
+  });
+
+  test(`${type}: has the Configuration panel`, () => {
+    const html = readTemplate(type);
+    for (const id of ['configToggle', 'configJson', 'btnCopyConfig', 'configCopied']) {
+      assert.ok(html.includes('id="' + id + '"'), `${type} missing #${id}`);
+    }
+    assert.ok(pageCode(type).includes('D.mountConfigPanel('), 'panel wired');
+  });
+}
+
+test('diagnostics resets counters, reads ?ticket= and reports the player version', () => {
   const html = readTemplate('diagnostics');
   const body = html.slice(html.indexOf('function load()'), html.indexOf('function flashConfirm'));
-  for (const s of ['counters.statsUpdates = 0', 'counters.bufferingEvents = 0', 'counters.errors = 0',
+  for (const part of ['counters.statsUpdates = 0', 'counters.bufferingEvents = 0', 'counters.errors = 0',
     'last.stats = null', 'last.streamInfo = null', 'renderStreamInfo()']) {
-    assert.ok(body.includes(s), 'load() must contain ' + s);
+    assert.ok(body.includes(part), 'load() must contain ' + part);
   }
+  assert.ok(html.includes("get('ticket')"));
+  assert.ok(html.includes('playerVersion:'));
+});
+
+test('branded-page shows no developer URL text to viewers', () => {
+  const html = readTemplate('branded-page');
+  const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+  assert.ok(!/\?stream=|\?token=|\?group=/.test(main), 'no URL param hints in visible markup');
 });
 
 for (const type of TYPES) {

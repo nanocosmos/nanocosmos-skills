@@ -22,3 +22,15 @@
 .feature-panel p:last-child {
   margin-bottom: 0;
 }
+
+/* Configuration panel (theme .raw-toggle / .raw-payload pattern). */
+.config-panel {
+  padding: 20px;
+}
+.config-actions {
+  margin-top: 12px;
+  align-items: center;
+}
+.is-hidden {
+  display: none;
+}

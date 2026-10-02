@@ -27,3 +27,15 @@
 .form-note:empty {
   display: none;
 }
+
+/* Configuration panel (theme .raw-toggle / .raw-payload pattern). */
+.config-panel {
+  padding: 20px;
+}
+.config-actions {
+  margin-top: 12px;
+  align-items: center;
+}
+.is-hidden {
+  display: none;
+}

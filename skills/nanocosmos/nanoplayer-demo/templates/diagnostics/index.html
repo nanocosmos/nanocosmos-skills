@@ -32,11 +32,12 @@
     <div class="container">
 
       <section class="panel form-panel">
+        <p class="ticket-line" id="ticketLine"></p>
         <div class="field">
-          <label for="streamInput">Stream name or group ID</label>
+          <label for="sourceInput" id="sourceLabel">Group ID</label>
           <div class="field-control">
-            <input type="text" id="streamInput" autocomplete="off" spellcheck="false">
-            <span class="helper">URL: ?stream= · ?token= · ?server=</span>
+            <input type="text" id="sourceInput" autocomplete="off" spellcheck="false">
+            <span class="helper">URL: ?group= · ?token= · ?stream=XXXXX-YYYYY · ?server= · ?ticket= (shown in the report)</span>
           </div>
         </div>
         <div class="field">
@@ -44,13 +45,13 @@
           <div class="field-control">
             <select id="modeSelect">
               <option value="fastadaptive">fastadaptive</option>
-              <option value="balancedadaptive" selected>balancedadaptive</option>
+              <option value="balancedadaptive">balancedadaptive</option>
               <option value="classic">classic</option>
             </select>
           </div>
         </div>
         <div class="button-row">
-          <button class="btn btn-primary" id="btnLoad">Load Stream</button>
+          <button class="btn btn-primary" id="btnLoad">Load</button>
           <button class="btn btn-secondary" id="btnStop">Stop</button>
         </div>
       </section>
@@ -62,16 +63,16 @@
             <span class="badge paused" id="statusBadge"><span class="dot"></span><span id="statusBadgeText">Idle</span></span>
             <span class="status-text" id="statusText"></span>
           </div>
-          <div class="status-right" id="statusRight">Latency — · Bitrate — · Buffer —</div>
+          <div class="status-right" id="statusRight">Bitrate — · Buffer delay — (target —)</div>
         </div>
       </section>
 
       <div class="stats-row">
         <section class="panel stats-panel">
           <h2>Live stats</h2>
-          <div class="info-row"><span class="label">Latency</span><span class="value" id="stLatency">—</span></div>
           <div class="info-row"><span class="label">Bitrate</span><span class="value" id="stBitrate">—</span></div>
-          <div class="info-row"><span class="label">Buffer</span><span class="value" id="stBuffer">—</span></div>
+          <div class="info-row"><span class="label">Buffer delay</span><span class="value" id="stBufferDelay">—</span></div>
+          <div class="info-row"><span class="label">Buffer target</span><span class="value" id="stBufferGoal">—</span></div>
           <div class="info-row"><span class="label">Frame rate</span><span class="value" id="stFrameRate">—</span></div>
           <div class="info-row"><span class="label">Stats updates</span><span class="value" id="stUpdates">0</span></div>
           <div class="info-row"><span class="label">Buffering events</span><span class="value" id="stBuffering">0</span></div>
@@ -90,6 +91,17 @@
           <button class="btn btn-primary" id="btnCopy">Copy Diagnostics Report</button>
           <button class="btn btn-secondary" id="btnClear">Clear Log</button>
           <span class="copy-confirm" id="copyConfirm">Copied to clipboard</span>
+        </div>
+      </section>
+
+      <section class="panel config-panel" id="configPanel">
+        <button class="raw-toggle" id="configToggle" aria-expanded="false" aria-controls="configJson">
+          <span>Configuration: what nanoPlayer receives (copy it into your page)</span><span class="chevron">›</span>
+        </button>
+        <pre class="raw-payload" id="configJson">—</pre>
+        <div class="button-row config-actions">
+          <button class="btn btn-secondary" id="btnCopyConfig">Copy configuration</button>
+          <span class="copy-confirm" id="configCopied">Copied</span>
         </div>
       </section>
 
@@ -112,17 +124,53 @@
 <script>
 (function () {
   'use strict';
+  // ── Player configuration ────────────────────────────────────────────────
+  // This object is what nanoPlayer receives (the demo only adds event
+  // handlers). Edit it to change the demo; the Configuration panel on the
+  // page shows the result and lets you copy it.
+  // Reference: https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api
+  var PLAYER_CONFIG = {
+    source: {
+      group: {
+        id: 'b6638d50-3581-4349-8fb2-59b3406c2dde', // bintu stream group (ABR). URL: ?group=
+        startQuality: 'medium', // high | medium-high | medium | medium-low | low (default low)
+        security: {}            // secure playback: { jwtoken: '…' }. URL: ?token=
+        // apiurl: 'https://bintu.nanocosmos.de' // optional, this is the default
+      },
+      options: {
+        adaption: { rule: 'deviationOfMean2' }, // ABR on. 'none' = keep the start quality
+        switch: { method: 'server', pauseOnError: false, forcePlay: true, timeout: 20 }
+      }
+    },
+    playback: {
+      autoplay: true,
+      automute: true,  // if the browser blocks sound, start muted instead of not at all
+      muted: false,    // try with sound first
+      faststart: true,
+      enableMediaOverQuic: true, // MoQ where the browser supports it, else WebSocket
+      latencyControlMode: 'balancedadaptive' // classic | fastadaptive | balancedadaptive
+    },
+    style: {
+      width: '100%', height: '100%', // fills the page's video area
+      scaling: 'letterbox',          // letterbox | fill | crop
+      controls: false                // the demo has its own controls
+    }
+  };
+
   var D = NanoDemo;
   var LOG_MAX = 300;
-  var DEFAULT_STREAM = 'CD6oL-2kE1g'; // played when the URL has no ?stream=
-  var params = D.readParams(location.search, { stream: DEFAULT_STREAM });
   var $ = function (id) { return document.getElementById(id); };
   var ui = {
-    stream: $('streamInput'), mode: $('modeSelect'),
+    source: $('sourceInput'), sourceLabel: $('sourceLabel'), mode: $('modeSelect'),
     badge: $('statusBadge'), badgeText: $('statusBadgeText'),
     text: $('statusText'), stats: $('statusRight'),
-    info: $('streamInfo'), log: $('logBox'), confirm: $('copyConfirm')
+    info: $('streamInfo'), log: $('logBox'), confirm: $('copyConfirm'), ticket: $('ticketLine')
   };
+  var panel = D.mountConfigPanel({
+    toggle: $('configToggle'), pre: $('configJson'), copy: $('btnCopyConfig'), confirm: $('configCopied')
+  });
+  // Support ticket this session belongs to (shown on the page and in the report). URL: ?ticket=
+  var ticket = (new URLSearchParams(location.search).get('ticket') || '').trim();
   var counters = { statsUpdates: 0, bufferingEvents: 0, errors: 0 };
   var last = { stats: null, streamInfo: null };
   var logLines = [];
@@ -146,9 +194,9 @@
   }
   function renderStats() {
     var f = D.formatStats(last.stats);
-    $('stLatency').textContent = f.latency;
     $('stBitrate').textContent = f.bitrate;
-    $('stBuffer').textContent = f.buffer;
+    $('stBufferDelay').textContent = f.bufferDelay;
+    $('stBufferGoal').textContent = f.bufferGoal;
     $('stFrameRate').textContent = f.framerate;
   }
   function renderStreamInfo() {
@@ -193,6 +241,16 @@
     onLog: function (name, e) { log(name, summarize(e)); }
   });
 
+  var config;
+  try {
+    config = D.applyUrlParams(PLAYER_CONFIG, location.search);
+  } catch (err) {
+    status.onState('error');
+    status.onError(err.message);
+    panel.render(PLAYER_CONFIG);
+    return;
+  }
+
   function load() {
     // A new load starts a new diagnostics session: no numbers from the previous stream.
     counters.statsUpdates = 0;
@@ -203,10 +261,11 @@
     renderCounters();
     renderStats();
     renderStreamInfo();
-    ctl.load({
-      stream: ui.stream.value, token: params.token, server: params.server,
+    config = D.mergeConfig(D.withSourceId(config, ui.source.value), {
       playback: { latencyControlMode: ui.mode.value }
     });
+    panel.render(config);
+    ctl.load(config);
   }
 
   function flashConfirm(text) {
@@ -220,7 +279,9 @@
       time: new Date().toISOString(),
       pageUrl: location.href,
       userAgent: navigator.userAgent,
-      config: { stream: ui.stream.value, server: params.server, latencyControlMode: ui.mode.value, token: params.token ? 'present' : 'none' },
+      ticket: ticket,
+      playerVersion: ctl.player && ctl.player.version,
+      config: JSON.parse(D.configJson(config)),
       counters: counters,
       lastStats: last.stats,
       streamInfo: last.streamInfo,
@@ -237,9 +298,12 @@
   $('btnLoad').addEventListener('click', load);
   $('btnStop').addEventListener('click', function () { ctl.stop(); });
   ui.mode.addEventListener('change', load);
-  ui.stream.addEventListener('keydown', function (e) { if (e.key === 'Enter') { load(); } });
+  ui.source.addEventListener('keydown', function (e) { if (e.key === 'Enter') { load(); } });
 
-  ui.stream.value = params.stream;
+  ui.ticket.textContent = ticket ? 'Ticket #' + ticket : '';
+  ui.sourceLabel.textContent = config.source.group ? 'Group ID' : 'Stream name';
+  ui.source.value = D.sourceId(config);
+  ui.mode.value = config.playback.latencyControlMode;
   load();
 })();
 </script>
