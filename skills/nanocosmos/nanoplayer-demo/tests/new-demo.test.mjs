@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { scaffold, findTheme, TYPES } from '../scripts/new-demo.mjs';
 
 const tmp = (p) => mkdtempSync(join(tmpdir(), p));
@@ -62,4 +64,28 @@ test('feature-wrapper also gets the wrapper library, other types do not', () => 
   const plain = join(tmp('npd-'), 'p');
   scaffold({ type: 'single-player', dest: plain, theme });
   assert.ok(!existsSync(join(plain, 'js', 'player-wrapper.js')));
+});
+
+test('scaffold --group writes the group into the page config of every type', () => {
+  const theme = stubTheme();
+  for (const type of TYPES) {
+    const dest = join(tmp('npd-'), type);
+    scaffold({ type, dest, theme, group: 'my-group-01' });
+    const code = readFileSync(join(dest, type === 'feature-wrapper' ? 'js/app.js' : 'index.html'), 'utf8');
+    const block = code.slice(code.indexOf('var PLAYER_CONFIG = {'), code.indexOf('};', code.indexOf('var PLAYER_CONFIG = {')));
+    assert.ok(block.includes("id: 'my-group-01'"), type + ': group in PLAYER_CONFIG');
+    assert.ok(!block.includes('b6638d50-3581-4349-8fb2-59b3406c2dde'), type + ': default group replaced');
+  }
+});
+
+test('scaffold rejects a group id that would break the page script', () => {
+  assert.throws(() => scaffold({ type: 'single-player', dest: join(tmp('npd-'), 'd'), theme: stubTheme(), group: "a'b" }),
+    /group must contain only letters, digits and dashes/);
+});
+
+test('the CLI prints OK when the scaffolded demo passes check-demo', () => {
+  const dest = join(tmp('npd-'), 'cli');
+  const out = execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/new-demo.mjs', import.meta.url)),
+    'single-player', dest, '--theme', stubTheme(), '--group', 'cli-group'], { encoding: 'utf8' });
+  assert.match(out, /^OK: single-player demo in .* passes check-demo/m);
 });
