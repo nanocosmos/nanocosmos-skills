@@ -197,7 +197,8 @@
       onStreamInfoError: function (e) {
         log('onStreamInfoError', e);
         state('error', e);
-        if (h.onError) { h.onError('Stream not found or offline: ' + errorMessage(e), e); }
+        var d = (e && e.data) || {};
+        if (h.onError) { h.onError(d.code ? errorMessage(e) : 'Stream not found or offline: ' + errorMessage(e), e); }
       },
       onPlay: function (e) { log('onPlay', e); state('playing', e); },
       onPause: function (e) { log('onPause', e); state('paused', e); },
@@ -237,7 +238,7 @@
     badgeEl.className = 'badge ' + v.badge;
     labelEl.textContent = v.label;
   }
-  // Standard status-bar wiring: ui = { badge, badgeText, text, stats? }.
+  // Standard status-bar wiring: ui = { badge, badgeText, text?, stats? }.
   // An error message stays visible until connecting/playing/idle clears it.
   // The player pauses right after an error; that pause keeps the Error badge.
   function statusHandlers(ui) {
@@ -247,10 +248,10 @@
         if (current === 'error' && s === 'paused') { return; }
         current = s;
         renderStatus(ui.badge, ui.badgeText, s);
-        if (s === 'connecting' || s === 'playing' || s === 'idle') { ui.text.textContent = ''; }
+        if (ui.text && (s === 'connecting' || s === 'playing' || s === 'idle')) { ui.text.textContent = ''; }
         if (s === 'idle' && ui.stats) { ui.stats.textContent = statsLine(null); }
       },
-      onError: function (msg) { ui.text.textContent = msg; },
+      onError: function (msg) { if (ui.text) { ui.text.textContent = msg; } },
       onStats: function (stats) { if (ui.stats) { ui.stats.textContent = statsLine(stats); } }
     };
   }
@@ -294,9 +295,10 @@
       'Page: ' + (i.pageUrl || ''),
       'User agent: ' + (i.userAgent || ''),
       'NanoDemo: ' + VERSION,
-      '',
-      '[Config]'
+      'Player: ' + (i.playerVersion || 'unknown')
     ];
+    if (i.ticket) { lines.push('Ticket: ' + i.ticket); }
+    lines.push('', '[Config]');
     flatten(i.config).forEach(function (r) { lines.push(r[0] + ': ' + r[1]); });
     lines.push('', '[Counters]');
     flatten(i.counters).forEach(function (r) { lines.push(r[0] + ': ' + r[1]); });
@@ -305,6 +307,40 @@
     lines.push('', '[Event log]');
     (i.log || []).forEach(function (l) { lines.push(l); });
     return redact(lines.join('\n'));
+  }
+
+  // ---- configuration panel ----------------------------------------------------
+  // els = { toggle, pre, copy?, confirm? } using the theme's .raw-toggle/.raw-payload.
+  // render(value) shows configJson(value) and remembers it for Copy.
+  function mountConfigPanel(els, env) {
+    var nav = (env && env.navigator) || (typeof navigator !== 'undefined' ? navigator : null);
+    var text = '';
+    function confirm(message) {
+      if (!els.confirm) { return; }
+      els.confirm.textContent = message;
+      els.confirm.classList.add('show');
+      setTimeout(function () { els.confirm.classList.remove('show'); }, 2000);
+    }
+    if (els.toggle) {
+      els.toggle.addEventListener('click', function () {
+        var open = els.toggle.getAttribute('aria-expanded') !== 'true';
+        els.toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        els.pre.classList.toggle('open', open);
+      });
+    }
+    if (els.copy) {
+      els.copy.addEventListener('click', function () {
+        if (!nav || !nav.clipboard) { confirm('Clipboard unavailable; select the text instead'); return; }
+        nav.clipboard.writeText(text).then(function () { confirm('Copied'); }, function () { confirm('Copy failed'); });
+      });
+    }
+    return {
+      render: function (value) {
+        text = configJson(value);
+        els.pre.textContent = text;
+        return text;
+      }
+    };
   }
 
   // ---- lifecycle ------------------------------------------------------------
@@ -352,6 +388,7 @@
     h = h || {};
     var player = null;   // set up and ready
     var pending = null;  // built, setup() not settled yet
+    var current = null;  // the page config of the last load()
     var gen = 0;
     function guard(my, fn) {
       return function () { if (my === gen && fn) { return fn.apply(null, arguments); } };
@@ -372,35 +409,38 @@
       return null;
     }
     return {
-      load: function (opts) {
-        opts = opts || {};
+      // config: the page's nanoPlayer config. It is passed on as a clone,
+      // unchanged except for `events` (page handlers run first, then the demo's).
+      load: function (config, extra) {
         var my = ++gen;
         release();
-        var config;
-        try {
-          config = buildConfig({
-            source: buildSource(opts),
-            playback: opts.playback,
-            style: opts.style,
-            events: playerEvents({
-              onState: guard(my, h.onState),
-              onError: guard(my, h.onError),
-              onStats: guard(my, h.onStats),
-              onStreamInfo: guard(my, h.onStreamInfo),
-              onLog: guard(my, h.onLog),
-              extra: guardAll(my, opts.extra)
-            })
-          });
-        } catch (err) {
-          return Promise.resolve(fail(my, err.message));
-        }
+        current = config || null;
+        var problem = validateConfig(config);
+        if (problem) { return Promise.resolve(fail(my, problem)); }
+        var cfg = clone(config);
+        var demo = playerEvents({
+          onState: guard(my, h.onState),
+          onError: guard(my, h.onError),
+          onStats: guard(my, h.onStats),
+          onStreamInfo: guard(my, h.onStreamInfo),
+          onLog: guard(my, h.onLog),
+          extra: guardAll(my, extra)
+        });
+        var page = guardAll(my, config.events);
+        cfg.events = {};
+        Object.keys(demo).forEach(function (name) { cfg.events[name] = demo[name]; });
+        Object.keys(page).forEach(function (name) {
+          var mine = cfg.events[name];
+          var theirs = page[name];
+          cfg.events[name] = mine ? function (e) { theirs(e); mine(e); } : theirs;
+        });
         if (h.onState) { h.onState('connecting'); }
         var startEnv = {
           NanoPlayer: env && env.NanoPlayer,
           window: env && env.window,
           onCreate: function (p) { pending = p; }
         };
-        return startPlayer(containerId, config, startEnv).then(function (p) {
+        return startPlayer(containerId, cfg, startEnv).then(function (p) {
           if (my !== gen) { return null; } // superseded: release() already destroyed it
           pending = null;
           player = p;
@@ -415,7 +455,8 @@
         release();
         if (h.onState) { h.onState('idle'); }
       },
-      get player() { return player; }
+      get player() { return player; },
+      get config() { return current; }
     };
   }
 
@@ -445,6 +486,7 @@
     buildReport: buildReport,
     startPlayer: startPlayer,
     stopPlayer: stopPlayer,
-    createController: createController
+    createController: createController,
+    mountConfigPanel: mountConfigPanel
   };
 });

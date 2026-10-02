@@ -73,6 +73,33 @@ export function fakeEl(tag = 'div', doc = null) {
       return child;
     },
     get firstChild() { return this.childNodes[0] || null; },
+    attributes: {},
+    getAttribute(name) { return name in this.attributes ? this.attributes[name] : null; },
+    setAttribute(name, value) { this.attributes[name] = String(value); },
+    classes: new Set(),
+    classList: null,
+    listeners: {},
+    addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
+    click() { (this.listeners.click || []).forEach((fn) => fn({ type: 'click' })); },
+  };
+  el.classList = {
+    add: (c) => el.classes.add(c),
+    remove: (c) => el.classes.delete(c),
+    contains: (c) => el.classes.has(c),
+    toggle: (c, force) => {
+      const on = force === undefined ? !el.classes.has(c) : force;
+      if (on) el.classes.add(c); else el.classes.delete(c);
+      return on;
+    },
   };
   return el;
+}
+
+export function fakeNavigator() {
+  return {
+    clipboard: {
+      written: [],
+      writeText(text) { this.written.push(text); return Promise.resolve(); },
+    },
+  };
 }
