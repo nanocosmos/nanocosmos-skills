@@ -4,124 +4,148 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const D = require('../lib/demo-core.js');
-
-const UUID = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.c2lnbmF0dXJlLXZhbHVl';
+const GROUP = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
 
-test('isUuid detects group IDs and rejects stream names', () => {
-  assert.equal(D.isUuid(UUID), true);
-  assert.equal(D.isUuid('  ' + UUID.toUpperCase() + ' '), true);
-  assert.equal(D.isUuid('CD6oL-2kE1g'), false);
-  assert.equal(D.isUuid(''), false);
-  assert.equal(D.isUuid(null), false);
+function pageConfig() {
+  return {
+    source: {
+      group: { id: GROUP, startQuality: 'medium', security: {} },
+      options: { adaption: { rule: 'deviationOfMean2' }, switch: { method: 'server', pauseOnError: false, forcePlay: true, timeout: 20 } }
+    },
+    playback: { autoplay: true, automute: true, muted: false, faststart: true, enableMediaOverQuic: true, latencyControlMode: 'balancedadaptive' },
+    style: { width: '100%', height: '100%', scaling: 'letterbox', controls: false }
+  };
+}
+
+test('applyUrlParams without params returns an equal copy, not the same object', () => {
+  const page = pageConfig();
+  const c = D.applyUrlParams(page, '');
+  assert.deepEqual(c, page);
+  assert.notEqual(c, page);
+  assert.notEqual(c.source.group, page.source.group);
 });
 
-test('readParams falls back to defaults', () => {
-  const p = D.readParams('');
-  assert.equal(p.stream, 'CD6oL-2kE1g');
-  assert.equal(p.token, '');
-  assert.equal(p.server, 'bintu-play.nanocosmos.de');
+test('applyUrlParams sets group id and token on the group, leaving the page config untouched', () => {
+  const page = pageConfig();
+  const before = JSON.stringify(page);
+  const c = D.applyUrlParams(page, '?group=other-group&token=' + JWT);
+  assert.equal(c.source.group.id, 'other-group');
+  assert.deepEqual(c.source.group.security, { jwtoken: JWT });
+  assert.equal(c.source.group.startQuality, 'medium');
+  assert.equal(JSON.stringify(page), before);
 });
 
-test('readParams reads stream, token alias and server, trimming whitespace', () => {
-  const p = D.readParams('?stream=%20ABCDE-12345%20&jwtoken=' + JWT + '&server=example.test');
-  assert.equal(p.stream, 'ABCDE-12345');
-  assert.equal(p.token, JWT);
-  assert.equal(p.server, 'example.test');
-  assert.equal(p.params.get('server'), 'example.test');
+test('applyUrlParams accepts ?jwtoken= as token alias and trims values', () => {
+  const c = D.applyUrlParams(pageConfig(), '?jwtoken=%20abc%20');
+  assert.deepEqual(c.source.group.security, { jwtoken: 'abc' });
 });
 
-test('readParams prefers ?token= over ?jwtoken= and treats blank stream as default', () => {
-  const p = D.readParams('?stream=%20&token=A&jwtoken=B');
-  assert.equal(p.stream, 'CD6oL-2kE1g');
-  assert.equal(p.token, 'A');
+test('?stream= switches to entries mode and wins over ?group=', () => {
+  const c = D.applyUrlParams(pageConfig(), '?group=ignored&stream=ABCDE-12345&token=T');
+  assert.equal(c.source.group, undefined);
+  assert.deepEqual(c.source.defaults, { service: 'bintu' });
+  assert.deepEqual(c.source.entries, [{ h5live: { rtmp: { streamname: 'ABCDE-12345' }, security: { jwtoken: 'T' } } }]);
+  assert.equal(c.source.startIndex, 0);
+  assert.deepEqual(c.source.options, pageConfig().source.options);
 });
 
-test('readParams accepts per-demo default overrides', () => {
-  assert.equal(D.readParams('', { stream: 'XXXXX-YYYYY' }).stream, 'XXXXX-YYYYY');
+test('a malformed ?stream= throws a readable error', () => {
+  assert.throws(() => D.applyUrlParams(pageConfig(), '?stream=foo'), /\?stream= must be a stream name like XXXXX-YYYYY/);
 });
 
-test('buildSource plays a stream name via entries', () => {
-  const s = D.buildSource({ stream: 'ABCDE-12345' });
-  assert.deepEqual(s.entries, [{ h5live: { rtmp: { streamname: 'ABCDE-12345' }, security: {} } }]);
-  assert.equal(s.group, undefined);
-  assert.deepEqual(s.defaults, { service: 'bintu' });
-  assert.deepEqual(s.general, { serverDomain: 'bintu-play.nanocosmos.de' });
-  assert.deepEqual(s.options, { switch: { timeout: 10 }, adaption: { rule: 'deviationOfMean2' } });
-  assert.equal(s.startIndex, 0);
+test('serverDomain is only set when ?server= is given', () => {
+  assert.equal(D.applyUrlParams(pageConfig(), '').source.general, undefined);
+  assert.deepEqual(D.applyUrlParams(pageConfig(), '?server=bintu-play-eu.nanocosmos.de').source.general,
+    { serverDomain: 'bintu-play-eu.nanocosmos.de' });
 });
 
-test('buildSource plays a UUID via group with apiurl and token security', () => {
-  const s = D.buildSource({ stream: UUID, token: JWT, server: 'example.test' });
-  assert.deepEqual(s.group, { id: UUID, apiurl: 'https://bintu.nanocosmos.de', security: { jwtoken: JWT } });
-  assert.equal(s.entries, undefined);
-  assert.equal(s.general.serverDomain, 'example.test');
+test('mergeConfig deep-merges objects, replaces arrays and leaves both inputs untouched', () => {
+  const base = pageConfig();
+  const override = { playback: { enableMediaOverQuic: false }, source: { group: { id: 'g2' } } };
+  const m = D.mergeConfig(base, override);
+  assert.equal(m.playback.enableMediaOverQuic, false);
+  assert.equal(m.playback.faststart, true);
+  assert.equal(m.source.group.id, 'g2');
+  assert.equal(m.source.group.startQuality, 'medium');
+  assert.equal(base.playback.enableMediaOverQuic, true);
+  override.playback.enableMediaOverQuic = 'changed';
+  assert.equal(m.playback.enableMediaOverQuic, false);
+  assert.deepEqual(D.mergeConfig({ a: [1, 2] }, { a: [3] }), { a: [3] });
 });
 
-test('buildSource rejects an empty or whitespace stream with a readable message', () => {
-  assert.throws(() => D.buildSource({ stream: '   ' }), /Enter a stream name/);
-  assert.throws(() => D.buildSource({}), /Enter a stream name/);
+test('clone keeps functions by reference and copies objects', () => {
+  const fn = () => 1;
+  const src = { events: { onPlay: fn }, a: { b: 1 } };
+  const c = D.clone(src);
+  assert.equal(c.events.onPlay, fn);
+  assert.notEqual(c.a, src.a);
 });
 
-test('buildConfig applies verified playback and style defaults', () => {
-  const source = D.buildSource({ stream: 'ABCDE-12345' });
-  const c = D.buildConfig({ source });
-  assert.equal(c.source, source);
-  assert.deepEqual(c.playback, {
-    autoplay: true, automute: true, muted: true,
-    enableMediaOverQuic: true, faststart: true,
-    latencyControlMode: 'balancedadaptive',
-  });
-  assert.deepEqual(c.style, { scaling: 'fill', width: '100%', height: '100%', view: true, controls: false });
-  assert.deepEqual(c.events, {});
+test('sourceId and withSourceId work for group and entries mode', () => {
+  assert.equal(D.sourceId(pageConfig()), GROUP);
+  assert.equal(D.withSourceId(pageConfig(), ' g3 ').source.group.id, 'g3');
+  const entries = D.applyUrlParams(pageConfig(), '?stream=ABCDE-12345');
+  assert.equal(D.sourceId(entries), 'ABCDE-12345');
+  assert.equal(D.withSourceId(entries, 'FGHIJ-67890').source.entries[0].h5live.rtmp.streamname, 'FGHIJ-67890');
+  assert.equal(D.sourceId({}), '');
 });
 
-test('buildConfig merges overrides and keeps automute on with autoplay', () => {
-  const c = D.buildConfig({
-    source: {},
-    playback: { latencyControlMode: 'fastadaptive', enableMediaOverQuic: false, automute: false },
-    style: { controls: true },
-  });
-  assert.equal(c.playback.latencyControlMode, 'fastadaptive');
-  assert.equal(c.playback.enableMediaOverQuic, false);
-  assert.equal(c.playback.automute, true);
-  assert.equal(c.style.controls, true);
-  assert.equal(c.style.scaling, 'fill');
+test('validateConfig explains missing ids and invalid enum values', () => {
+  assert.equal(D.validateConfig(pageConfig()), null);
+  assert.match(D.validateConfig(D.withSourceId(pageConfig(), '')), /Enter a group ID/);
+  assert.match(D.validateConfig({}), /needs a source/);
+  assert.match(D.validateConfig({ source: { entries: [] } }), /Enter a stream name/);
+  const badQ = pageConfig(); badQ.source.group.startQuality = 'best';
+  assert.match(D.validateConfig(badQ), /startQuality must be one of high, medium-high, medium, medium-low, low/);
+  const badL = pageConfig(); badL.playback.latencyControlMode = '2s';
+  assert.match(D.validateConfig(badL), /latencyControlMode must be one of classic, fastadaptive, balancedadaptive/);
 });
 
-test('buildConfig rejects a latency value that is not a control mode', () => {
-  assert.throws(() => D.buildConfig({ source: {}, playback: { latencyControlMode: '2s' } }),
-    /latencyControlMode must be one of fastadaptive, balancedadaptive, classic/);
+test('configJson pretty-prints without events and redacts every jwtoken value', () => {
+  const c = D.applyUrlParams(pageConfig(), '?token=not-a-jwt-secret');
+  c.events = { onPlay: () => {} };
+  const text = D.configJson(c);
+  assert.ok(!text.includes('not-a-jwt-secret'));
+  assert.ok(text.includes('"jwtoken": "[redacted]"'));
+  assert.ok(!text.includes('events'));
+  assert.ok(text.startsWith('{\n  "source"'));
+  assert.ok(D.configJson([{ label: 'A', config: c }]).includes('"label": "A"'));
 });
 
-test('errorMessage prefers data.message, then data.error, then code', () => {
-  assert.equal(D.errorMessage({ data: { message: 'Stream offline', code: 2002 } }), 'Stream offline');
+test('errorText gives readable text for documented code ranges', () => {
+  assert.match(D.errorText(2001, 'x'), /^Stream not found: check the group ID or stream name\. \(2001: x\)$/);
+  assert.match(D.errorText(4901), /^Token problem: .* \(4901\)$/);
+  assert.match(D.errorText(1005), /press play/);
+  assert.match(D.errorText(5003, 'bad'), /check PLAYER_CONFIG/);
+  assert.equal(D.errorText(3100, 'Media error'), 'Media error');
+  assert.equal(D.errorText(undefined, ''), 'Unknown player error');
+  assert.equal(D.errorText(3100, ''), 'Player error 3100');
+});
+
+test('errorMessage reads the player event payload and maps the code', () => {
+  assert.match(D.errorMessage({ data: { code: 2001, message: 'not found' } }), /^Stream not found/);
   assert.equal(D.errorMessage({ data: { error: { message: 'Nested' } } }), 'Nested');
-  assert.equal(D.errorMessage({ data: { error: 'Flat' } }), 'Flat');
-  assert.equal(D.errorMessage({ data: { code: 4001 } }), 'Player error 4001');
   assert.equal(D.errorMessage(new Error('Plain')), 'Plain');
   assert.equal(D.errorMessage(undefined), 'Unknown player error');
 });
 
-test('redact removes JWTs and token URL params', () => {
-  const out = D.redact('url https://x.test/?stream=A&token=' + JWT + '&jwtoken=abc#x and raw ' + JWT);
+test('redact removes JWTs and token URL params, keeping JSON intact', () => {
+  const out = D.redact('u ?stream=A&token=' + JWT + '&jwtoken=abc#x raw ' + JWT);
   assert.ok(!out.includes(JWT));
-  assert.ok(!out.includes('jwtoken=abc'));
-  assert.ok(out.includes('token=[redacted]'));
-  assert.ok(out.includes('jwtoken=[redacted]'));
-  assert.ok(out.includes('stream=A'));
-  assert.equal(D.redact(null), '');
+  assert.ok(out.includes('token=[redacted]') && out.includes('jwtoken=[redacted]') && out.includes('stream=A'));
+  assert.equal(D.redact('{"u":"wss://x/?token=abc"}'), '{"u":"wss://x/?token=[redacted]"}');
 });
 
-test('formatStats reads plain numbers and {current} objects, dashes for missing', () => {
-  assert.deepEqual(D.formatStats({ latency: 1.234, bitrate: 1500, bufferDelay: 0.8, frameRate: 30 }),
-    { latency: '1.23 s', bitrate: '1500 kbps', buffer: '0.80 s', framerate: '30 fps' });
-  assert.deepEqual(D.formatStats({ buffer: { delay: { current: 0.5 } }, framerate: { current: 25 } }),
-    { latency: '—', bitrate: '—', buffer: '0.50 s', framerate: '25 fps' });
-  assert.deepEqual(D.formatStats(null), { latency: '—', bitrate: '—', buffer: '—', framerate: '—' });
+test('formatStats converts bit/s to kbps and shows buffer delay with its target', () => {
+  assert.deepEqual(
+    D.formatStats({ bitrate: { current: 1500000 }, buffer: { delay: { current: 0.84 } }, buffergoal: { real: 1.2 }, framerate: { current: 30 } }),
+    { bitrate: '1500 kbps', bufferDelay: '0.84 s', bufferGoal: '1.20 s', framerate: '30 fps' });
+  assert.deepEqual(D.formatStats(null), { bitrate: '—', bufferDelay: '—', bufferGoal: '—', framerate: '—' });
 });
 
-test('statsLine renders the status-bar summary', () => {
-  assert.equal(D.statsLine(null), 'Latency — · Bitrate — · Buffer —');
-  assert.equal(D.statsLine({ latency: 1, bitrate: 900, bufferDelay: 0.5 }), 'Latency 1.00 s · Bitrate 900 kbps · Buffer 0.50 s');
+test('statsLine renders bitrate and buffer delay against target', () => {
+  assert.equal(D.statsLine(null), 'Bitrate — · Buffer delay — (target —)');
+  assert.equal(D.statsLine({ bitrate: { current: 900000 }, buffer: { delay: { current: 0.5 } }, buffergoal: { real: 1 } }),
+    'Bitrate 900 kbps · Buffer delay 0.50 s (target 1.00 s)');
 });

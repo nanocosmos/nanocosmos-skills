@@ -15,86 +15,135 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '2.0.0';
   var CDN_URL = 'https://demo.nanocosmos.de/nanoplayer/api/release/nanoplayer.5.min.js';
-  var DEFAULTS = {
-    stream: 'CD6oL-2kE1g',
-    serverDomain: 'bintu-play.nanocosmos.de',
-    apiUrl: 'https://bintu.nanocosmos.de',
-    latencyControlMode: 'balancedadaptive'
-  };
-  var LATENCY_MODES = ['fastadaptive', 'balancedadaptive', 'classic'];
-  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var LATENCY_MODES = ['classic', 'fastadaptive', 'balancedadaptive'];
+  var START_QUALITIES = ['high', 'medium-high', 'medium', 'medium-low', 'low'];
+  var STREAM_NAME_RE = /^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/;
   var JWT_RE = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
   var TOKEN_PARAM_RE = /([?&](?:token|jwtoken)=)[^&#\s"'<>]*/gi;
-  var DASH = '—';
+  var DASH = '\u2014';
 
-  function assign(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var src = arguments[i] || {};
-      for (var k in src) { if (Object.prototype.hasOwnProperty.call(src, k)) { target[k] = src[k]; } }
+  // Deep copy of plain config data; functions (event handlers) stay by reference.
+  function clone(v) {
+    if (Array.isArray(v)) { return v.map(clone); }
+    if (v && typeof v === 'object') {
+      var o = {};
+      Object.keys(v).forEach(function (k) { o[k] = clone(v[k]); });
+      return o;
     }
-    return target;
+    return v;
   }
 
-  function isUuid(s) { return UUID_RE.test(String(s == null ? '' : s).trim()); }
+  // New config = base with override merged in (objects merge, arrays replace).
+  function mergeConfig(base, override) {
+    var out = clone(base);
+    (function merge(target, src) {
+      Object.keys(src || {}).forEach(function (k) {
+        var v = src[k];
+        var t = target[k];
+        if (v && typeof v === 'object' && !Array.isArray(v) && t && typeof t === 'object' && !Array.isArray(t)) { merge(t, v); }
+        else { target[k] = clone(v); }
+      });
+    })(out, override);
+    return out;
+  }
 
-  // Standard demo URL params: ?stream= ?token= (alias ?jwtoken=) ?server=
-  function readParams(search, defaults) {
-    var d = assign({}, DEFAULTS, defaults);
+  // Copy of the page config with the standard URL params applied:
+  // ?group= ?token= (alias ?jwtoken=) ?stream=XXXXX-YYYYY (entries mode, wins over ?group=) ?server=
+  function applyUrlParams(config, search) {
+    var c = clone(config || {});
+    c.source = c.source || {};
     var p = new URLSearchParams(search || '');
-    return {
-      stream: (p.get('stream') || '').trim() || d.stream,
-      token: (p.get('token') || p.get('jwtoken') || '').trim(),
-      server: (p.get('server') || '').trim() || d.serverDomain,
-      params: p
-    };
-  }
-
-  // One base source; a UUID plays as a group, anything else as a stream name.
-  function buildSource(opts) {
-    opts = opts || {};
-    var stream = String(opts.stream == null ? '' : opts.stream).trim();
-    if (!stream) { throw new Error('Enter a stream name (XXXXX-YYYYY) or a group ID.'); }
-    var security = opts.token ? { jwtoken: opts.token } : {};
-    var source = {
-      defaults: { service: 'bintu' },
-      general: { serverDomain: opts.server || DEFAULTS.serverDomain },
-      options: { switch: { timeout: 10 }, adaption: { rule: 'deviationOfMean2' } },
-      startIndex: 0
-    };
-    if (isUuid(stream)) {
-      source.group = { id: stream, apiurl: opts.apiUrl || DEFAULTS.apiUrl, security: security };
+    var group = (p.get('group') || '').trim();
+    var token = (p.get('token') || p.get('jwtoken') || '').trim();
+    var stream = (p.get('stream') || '').trim();
+    var server = (p.get('server') || '').trim();
+    if (stream) {
+      if (!STREAM_NAME_RE.test(stream)) {
+        throw new Error('?stream= must be a stream name like XXXXX-YYYYY (got "' + stream + '"). For a group use ?group=.');
+      }
+      delete c.source.group;
+      c.source.defaults = { service: 'bintu' };
+      c.source.entries = [{ h5live: { rtmp: { streamname: stream }, security: token ? { jwtoken: token } : {} } }];
+      c.source.startIndex = 0;
     } else {
-      source.entries = [{ h5live: { rtmp: { streamname: stream }, security: security } }];
+      if (group) { c.source.group = c.source.group || {}; c.source.group.id = group; }
+      if (token && c.source.group) { c.source.group.security = { jwtoken: token }; }
+      if (token && c.source.entries) {
+        c.source.entries.forEach(function (e) { if (e.h5live) { e.h5live.security = { jwtoken: token }; } });
+      }
     }
-    return source;
+    if (server) { c.source.general = { serverDomain: server }; }
+    return c;
   }
 
-  function buildConfig(opts) {
-    opts = opts || {};
-    var playback = assign({
-      autoplay: true, automute: true, muted: true,
-      enableMediaOverQuic: true, faststart: true,
-      latencyControlMode: DEFAULTS.latencyControlMode
-    }, opts.playback);
-    if (LATENCY_MODES.indexOf(playback.latencyControlMode) < 0) {
-      throw new Error('latencyControlMode must be one of ' + LATENCY_MODES.join(', ') +
-        ' (a control behavior, not a latency in seconds). Got "' + playback.latencyControlMode + '".');
+  function sourceId(config) {
+    var s = (config && config.source) || {};
+    if (s.group) { return s.group.id || ''; }
+    var e = s.entries && s.entries[0];
+    return (e && e.h5live && e.h5live.rtmp && e.h5live.rtmp.streamname) || '';
+  }
+
+  function withSourceId(config, value) {
+    var c = clone(config);
+    var v = String(value == null ? '' : value).trim();
+    if (c.source && c.source.group) { c.source.group.id = v; }
+    else if (c.source && c.source.entries && c.source.entries[0]) { c.source.entries[0].h5live.rtmp.streamname = v; }
+    return c;
+  }
+
+  // Readable problem with the config, or null. Catches what nanoPlayer would reject late.
+  function validateConfig(config) {
+    var s = config && config.source;
+    if (!s) { return 'PLAYER_CONFIG needs a source.'; }
+    if (s.group) {
+      if (!String(s.group.id || '').trim()) { return 'Enter a group ID (source.group.id or ?group=).'; }
+      if (s.group.startQuality && START_QUALITIES.indexOf(s.group.startQuality) < 0) {
+        return 'source.group.startQuality must be one of ' + START_QUALITIES.join(', ') + '.';
+      }
+    } else if (!s.entries || !s.entries.length || !sourceId(config)) {
+      return 'Enter a stream name (?stream=XXXXX-YYYYY) or set source.group.id.';
     }
-    if (playback.autoplay) { playback.automute = true; } // browsers block unmuted autoplay
-    var style = assign({ scaling: 'fill', width: '100%', height: '100%', view: true, controls: false }, opts.style);
-    return { source: opts.source, playback: playback, style: style, events: opts.events || {} };
+    var mode = config.playback && config.playback.latencyControlMode;
+    if (mode && LATENCY_MODES.indexOf(mode) < 0) {
+      return 'playback.latencyControlMode must be one of ' + LATENCY_MODES.join(', ') + ' (a behavior, not seconds).';
+    }
+    return null;
+  }
+
+  // What the Configuration panel shows and copies: no handlers, no token values.
+  function configJson(value) {
+    return JSON.stringify(value, function (key, v) {
+      if (key === 'events' || typeof v === 'function') { return undefined; }
+      if (key === 'jwtoken' && v) { return '[redacted]'; }
+      return v;
+    }, 2);
+  }
+
+  // Readable text for the documented error code ranges (nanoplayer_api_errors).
+  function errorText(code, message) {
+    var m = message ? String(message) : '';
+    var c = Number(code);
+    var hint = null;
+    if (c === 1005) { hint = 'Playback needs a click: press play.'; }
+    else if (c === 2001) { hint = 'Stream not found: check the group ID or stream name.'; }
+    else if (c === 2002 || c === 2003) { hint = 'No media: the stream is not sending video or audio right now.'; }
+    else if (c === 2004) { hint = 'The stream was stopped.'; }
+    else if (c === 4006) { hint = 'The switch took too long and timed out.'; }
+    else if (c >= 4900 && c <= 4999) { hint = 'Token problem: the JWT is missing, expired or not valid for this stream.'; }
+    else if (c >= 5001 && c <= 5010) { hint = 'Player setup failed: check PLAYER_CONFIG.'; }
+    if (!hint) { return m || (code != null && isFinite(c) ? 'Player error ' + c : 'Unknown player error'); }
+    return hint + ' (' + c + (m ? ': ' + m : '') + ')';
   }
 
   function errorMessage(e) {
     var d = (e && e.data) || {};
-    if (d.message) { return String(d.message); }
-    if (d.error && typeof d.error === 'object' && d.error.message) { return String(d.error.message); }
-    if (d.error) { return String(d.error); }
-    if (d.code != null) { return 'Player error ' + d.code; }
-    if (e && e.message) { return String(e.message); }
-    return 'Unknown player error';
+    var msg = d.message ||
+      (d.error && typeof d.error === 'object' && d.error.message) ||
+      (typeof d.error === 'string' ? d.error : '') ||
+      (e && e.message) || '';
+    return errorText(d.code, msg);
   }
 
   function redact(text) {
@@ -103,38 +152,34 @@
       .replace(JWT_RE, '[redacted]');
   }
 
-  // onStats field names vary by player build; take the first numeric match.
-  // Verified against a live payload in Task 15 of the implementation plan.
   function num(v) {
     if (v && typeof v === 'object' && typeof v.current === 'number') { return v.current; }
     return (typeof v === 'number' && isFinite(v)) ? v : null;
   }
-  function pick(obj, paths) {
-    for (var i = 0; i < paths.length; i++) {
-      var parts = paths[i].split('.');
-      var v = obj;
-      for (var j = 0; j < parts.length && v != null; j++) { v = v[parts[j]]; }
-      var n = num(v);
-      if (n != null) { return n; }
-    }
-    return null;
+  function pick(obj, path) {
+    var v = obj;
+    var parts = path.split('.');
+    for (var i = 0; i < parts.length && v != null; i++) { v = v[parts[i]]; }
+    return num(v);
   }
+  // onStats (nanoplayer_api): bitrate.* in bit/s; buffer.delay and buffergoal
+  // have no documented unit; shown as seconds (UNVERIFIED, see best-practices).
   function formatStats(stats) {
     var s = stats || {};
-    var lat = pick(s, ['latency', 'latencyVideo', 'currentLatency']);
-    var br = pick(s, ['bitrate', 'playoutBitrate', 'videoBitrate', 'qosBitrateRendered']);
-    var buf = pick(s, ['buffer.delay', 'bufferDelay', 'bufferLength', 'buffer']);
-    var fps = pick(s, ['framerate', 'frameRate']);
+    var br = pick(s, 'bitrate');
+    var delay = pick(s, 'buffer.delay');
+    var goal = pick(s, 'buffergoal.real');
+    var fps = pick(s, 'framerate');
     return {
-      latency: lat == null ? DASH : lat.toFixed(2) + ' s',
-      bitrate: br == null ? DASH : Math.round(br) + ' kbps',
-      buffer: buf == null ? DASH : buf.toFixed(2) + ' s',
+      bitrate: br == null ? DASH : Math.round(br / 1000) + ' kbps',
+      bufferDelay: delay == null ? DASH : delay.toFixed(2) + ' s',
+      bufferGoal: goal == null ? DASH : goal.toFixed(2) + ' s',
       framerate: fps == null ? DASH : fps.toFixed(0) + ' fps'
     };
   }
   function statsLine(stats) {
     var f = formatStats(stats);
-    return 'Latency ' + f.latency + ' · Bitrate ' + f.bitrate + ' · Buffer ' + f.buffer;
+    return 'Bitrate ' + f.bitrate + ' \u00b7 Buffer delay ' + f.bufferDelay + ' (target ' + f.bufferGoal + ')';
   }
 
   // ---- events --------------------------------------------------------------
@@ -377,12 +422,16 @@
   return {
     VERSION: VERSION,
     CDN_URL: CDN_URL,
-    DEFAULTS: DEFAULTS,
     LATENCY_MODES: LATENCY_MODES,
-    isUuid: isUuid,
-    readParams: readParams,
-    buildSource: buildSource,
-    buildConfig: buildConfig,
+    START_QUALITIES: START_QUALITIES,
+    clone: clone,
+    mergeConfig: mergeConfig,
+    applyUrlParams: applyUrlParams,
+    sourceId: sourceId,
+    withSourceId: withSourceId,
+    validateConfig: validateConfig,
+    configJson: configJson,
+    errorText: errorText,
     errorMessage: errorMessage,
     redact: redact,
     formatStats: formatStats,
