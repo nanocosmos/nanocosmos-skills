@@ -33,7 +33,7 @@ fixes both.
 | 5 | `defaults.service: 'bintu'` always set | Fills endpoints for **entries** (source defaults page) | Only in entries mode |
 | 6 | `muted: true` | Autoplay with automute "will attempt to start the playback unmuted", example `muted: false` (autoplay page) | `muted: false`; multi-player and booth/kiosk pages `muted: true` with a comment |
 | 7 | `scaling: 'fill'` | Default `letterbox` | `letterbox` |
-| 8 | Status line "Latency …" | `onStats` has no latency field | "Buffer delay" from `stats.buffer.delay.current` |
+| 8 | Status line "Latency …" | `onStats` has no latency field | "Buffer delay" from `stats.buffer.delay.current`, with the latency control's target `stats.buffergoal.real` next to it |
 | 9 | Bitrate printed as kbps | `stats.bitrate.*` "in Bit/s" | Divide by 1000 |
 | 10 | Raw error message only | Error code ranges and never-retry list (errors page) | Readable text per code range, rules in best practices |
 | 11 | ABR undocumented, renditions guessed | `switchStream` disables ABR, `setAdaption` changes rule, `onSwitchStream*` carry `data.entry` | ABR section; show the active entry from events; no invented quality list |
@@ -126,16 +126,22 @@ Added / changed:
 | `configJson(config)` | Pretty JSON without `events`, tokens redacted |
 | `createController(id, handlers, env).load(config, extra?)` | Takes the page's config unchanged and only attaches `events` (merged with any `config.events` the page set, page handlers first). Same supersede/pending/stale guards as v1 |
 | `errorText(code, message)` | Readable text by documented range: 1005 "tap to play", 2001 not found, 2002/2003 no media, 2004 stopped, 4006 switch timeout, 4900–4999 token problem, 5001–5010 setup/config; else the player message |
-| `formatStats(stats)` | `{ bitrate: kbps from bit/s, bufferDelay, framerate }`; `statsLine` = "Bitrate … · Buffer delay …" |
+| `formatStats(stats)` | `{ bitrate: kbps from bit/s, bufferDelay, bufferGoal, framerate }`; `statsLine` = "Bitrate … · Buffer delay … (target …)" |
 | `statusHandlers(ui)` | `text` and `stats` both optional |
 | `buildReport(info)` | adds `playerVersion` and optional `ticket` |
 
 Kept: events → states, status/badge, sticky Error, log, redaction, report,
 `startPlayer`/`stopPlayer`, pagehide, `SwitchPlayer`.
 
-`stats.buffer.delay` has no unit in the docs (`onError`'s
-`bufferDelayCurrent` is ms). v2 displays it in seconds with two decimals,
-marks it UNVERIFIED in code and docs, and the browser check confirms it.
+`stats.buffer.delay` and `stats.buffergoal` have no unit in the docs
+(`onError`'s `bufferDelayCurrent` is ms). Seconds is the likely unit:
+`buffer.start/end` are media-timeline times and the latency control compares
+the delay against `tweaks.buffer` thresholds documented in seconds (target
+1.2 s). v2 displays both in seconds with two decimals, marks the unit
+UNVERIFIED in code and docs, and the browser check confirms it.
+`buffergoal.real` ("the final calculated buffergoal value including
+offsets") is the best available indicator of how close to the live edge the
+player aims, so comparison pages lead with "buffer delay vs target".
 
 ## 6. Templates
 
