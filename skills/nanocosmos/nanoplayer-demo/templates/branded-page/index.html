@@ -32,10 +32,14 @@
     <div class="container">
 
       <section class="panel brand-intro">
+        <!-- Customer logo: replace customer-logo.svg with the partner's file (keep the
+             name). Until it arrives keep the "logo pending" placeholder; never mock up
+             a logo. -->
         <img class="customer-logo" src="customer-logo.svg" alt="Customer logo">
         <div>
           <h1 class="brand-title">{{TITLE}}</h1>
           <p class="brand-text">Event or customer description goes here: one or two sentences on what the viewer is watching.</p>
+          <p class="brand-event">Event · venue · dates go here (e.g. booth number), or delete this line.</p>
         </div>
       </section>
 
@@ -46,11 +50,23 @@
             <span class="badge paused" id="statusBadge"><span class="dot"></span><span id="statusBadgeText">Idle</span></span>
             <span class="status-text" id="statusText"></span>
           </div>
-          <div class="status-right" id="statusRight">Latency — · Bitrate — · Buffer —</div>
+          <div class="status-right" id="statusRight">Bitrate — · Buffer delay — (target —)</div>
         </div>
       </section>
 
-      <p class="helper brand-note">Powered by nanoStream ultra-low-latency delivery. URL: ?stream= · ?token= · ?server=</p>
+      <p class="helper brand-note">Powered by nanoStream ultra-low-latency delivery.</p>
+
+      <!-- Viewer-facing page: the Configuration panel only shows with ?config=1. -->
+      <section class="panel config-panel" id="configPanel">
+        <button class="raw-toggle" id="configToggle" aria-expanded="false" aria-controls="configJson">
+          <span>Configuration: what nanoPlayer receives (copy it into your page)</span><span class="chevron">›</span>
+        </button>
+        <pre class="raw-payload" id="configJson">—</pre>
+        <div class="button-row config-actions">
+          <button class="btn btn-secondary" id="btnCopyConfig">Copy configuration</button>
+          <span class="copy-confirm" id="configCopied">Copied</span>
+        </div>
+      </section>
 
     </div>
   </main>
@@ -71,16 +87,67 @@
 <script>
 (function () {
   'use strict';
+  // ── Player configuration ────────────────────────────────────────────────
+  // This object is what nanoPlayer receives (the demo only adds event
+  // handlers). Edit it to change the demo; the Configuration panel on the
+  // page shows the result and lets you copy it.
+  // Reference: https://docs.nanocosmos.de/docs/nanoplayer/nanoplayer_api
+  var PLAYER_CONFIG = {
+    source: {
+      group: {
+        id: 'b6638d50-3581-4349-8fb2-59b3406c2dde', // bintu stream group (ABR). URL: ?group=
+        startQuality: 'medium', // high | medium-high | medium | medium-low | low (default low)
+        security: {}            // secure playback: { jwtoken: '…' }. URL: ?token=
+        // apiurl: 'https://bintu.nanocosmos.de' // optional, this is the default
+      },
+      options: {
+        adaption: { rule: 'deviationOfMean2' }, // ABR on. 'none' = keep the start quality
+        switch: { method: 'server', pauseOnError: false, forcePlay: true, timeout: 20 }
+      }
+    },
+    playback: {
+      autoplay: true,
+      automute: true,  // if the browser blocks sound, start muted instead of not at all
+      muted: true,     // unattended screen: no one there to unmute (docs default: false)
+      faststart: true,
+      enableMediaOverQuic: true, // MoQ where the browser supports it, else WebSocket
+      latencyControlMode: 'balancedadaptive' // classic | fastadaptive | balancedadaptive
+    },
+    style: {
+      width: '100%', height: '100%', // fills the page's video area
+      scaling: 'letterbox',          // letterbox | fill | crop
+      controls: false                // the demo has its own controls
+    }
+  };
+
+  // Viewer-facing page (booth screen, customer page): no stream form; the
+  // group comes from PLAYER_CONFIG or ?group=. Add ?config=1 to see the
+  // Configuration panel.
   var D = NanoDemo;
-  var DEFAULT_STREAM = 'CD6oL-2kE1g'; // played when the URL has no ?stream=
-  var params = D.readParams(location.search, { stream: DEFAULT_STREAM });
   var $ = function (id) { return document.getElementById(id); };
-  var ctl = D.createController('player', D.statusHandlers({
+  var status = D.statusHandlers({
     badge: $('statusBadge'), badgeText: $('statusBadgeText'),
     text: $('statusText'), stats: $('statusRight')
-  }));
-  // Viewer-facing page: no stream form, the stream comes from the URL.
-  ctl.load({ stream: params.stream, token: params.token, server: params.server });
+  });
+  var ctl = D.createController('player', status);
+  var panel = D.mountConfigPanel({
+    toggle: $('configToggle'), pre: $('configJson'), copy: $('btnCopyConfig'), confirm: $('configCopied')
+  });
+  if (new URLSearchParams(location.search).get('config') !== '1') {
+    $('configPanel').classList.add('is-hidden');
+  }
+
+  var config;
+  try {
+    config = D.applyUrlParams(PLAYER_CONFIG, location.search);
+  } catch (err) {
+    status.onState('error');
+    status.onError(err.message);
+    panel.render(PLAYER_CONFIG);
+    return;
+  }
+  panel.render(config);
+  ctl.load(config);
 })();
 </script>
 </body>

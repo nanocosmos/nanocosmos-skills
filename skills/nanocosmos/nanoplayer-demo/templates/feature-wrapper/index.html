@@ -33,10 +33,10 @@
 
       <section class="panel form-panel">
         <div class="field">
-          <label for="streamsInput">Streams</label>
+          <label for="groupsInput">Groups</label>
           <div class="field-control">
-            <input type="text" id="streamsInput" autocomplete="off" spellcheck="false">
-            <span class="helper">Comma-separated stream names or group IDs to switch between. URL: ?streams=a,b · ?token= · ?server=</span>
+            <input type="text" id="groupsInput" autocomplete="off" spellcheck="false">
+            <span class="helper">Comma-separated group IDs to switch between. URL: ?groups=a,b · ?token= · ?server=</span>
           </div>
         </div>
         <div class="button-row">
@@ -52,7 +52,7 @@
             <span class="badge paused" id="statusBadge"><span class="dot"></span><span id="statusBadgeText">Idle</span></span>
             <span class="status-text" id="statusText"></span>
           </div>
-          <div class="status-right" id="statusRight">Latency — · Bitrate — · Buffer —</div>
+          <div class="status-right" id="statusRight">Bitrate — · Buffer delay — (target —)</div>
         </div>
       </section>
 
@@ -64,6 +64,17 @@
       <section class="panel log-panel">
         <h2>Switch events</h2>
         <div class="log-box" id="logBox" aria-live="polite"></div>
+      </section>
+
+      <section class="panel config-panel" id="configPanel">
+        <button class="raw-toggle" id="configToggle" aria-expanded="false" aria-controls="configJson">
+          <span>Configuration: what nanoPlayer receives (copy it into your page)</span><span class="chevron">›</span>
+        </button>
+        <pre class="raw-payload" id="configJson">—</pre>
+        <div class="button-row config-actions">
+          <button class="btn btn-secondary" id="btnCopyConfig">Copy configuration</button>
+          <span class="copy-confirm" id="configCopied">Copied</span>
+        </div>
       </section>
 
     </div>

@@ -46,3 +46,8 @@
 .is-hidden {
   display: none;
 }
+
+.brand-event {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
