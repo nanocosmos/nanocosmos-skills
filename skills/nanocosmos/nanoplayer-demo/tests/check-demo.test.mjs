@@ -15,6 +15,7 @@ const VALID_HTML = `<!doctype html><html><head>
 <span>Updated <!-- updated -->2026-09-29<!-- /updated --></span></footer>
 <script src="${CDN_URL}"></script>
 <script src="js/demo-core.js"></script>
+<script>var PLAYER_CONFIG = { source: { group: { id: 'g', startQuality: 'medium' } } };</script>
 <script>document.getElementById('x').addEventListener('click', function (e) { e.stopPropagation(); });</script>
 </body></html>`;
 
@@ -95,7 +96,25 @@ test('hardcoded credentials are rejected', () => {
   assert.deepEqual(rules(makeDemo({ 'js/app.js': 'var i = \'<input type="password">\';' })), []);
 });
 
-test('the real demo-core.js passes the source rules', () => {
+test('the real demo-core.js and player-wrapper.js pass the source rules', () => {
   const core = readFileSync(new URL('../lib/demo-core.js', import.meta.url), 'utf8');
-  assert.deepEqual(checkDemo(makeDemo({ 'js/demo-core.js': core })), []);
+  const wrapper = readFileSync(new URL('../lib/player-wrapper.js', import.meta.url), 'utf8');
+  assert.deepEqual(checkDemo(makeDemo({ 'js/demo-core.js': core, 'js/player-wrapper.js': wrapper })), []);
+});
+
+test('the page must define PLAYER_CONFIG in index.html or js/app.js', () => {
+  const noConfig = html((h) => h.replace(/<script>var PLAYER_CONFIG[^<]*<\/script>\n/, ''));
+  assert.deepEqual(rules(makeDemo({ 'index.html': noConfig })), ['player-config']);
+  assert.deepEqual(rules(makeDemo({ 'index.html': noConfig, 'js/app.js': "var PLAYER_CONFIG = { source: { group: { id: 'g' } } };" })), []);
+});
+
+test('a hardcoded serverDomain is rejected', () => {
+  const problems = checkDemo(makeDemo({ 'js/app.js': "var x = 1;\nvar c = { general: { serverDomain: 'bintu-play.nanocosmos.de' } };" }));
+  assert.deepEqual(problems.map((p) => [p.rule, p.file]), [['no-server-domain-literal', 'js/app.js']]);
+  assert.match(problems[0].message, /line 2/);
+});
+
+test('startIndex next to a group in the page config is rejected', () => {
+  const withIndex = html((h) => h.replace("startQuality: 'medium' } } };", "startQuality: 'medium' }, startIndex: 0 } };"));
+  assert.deepEqual(rules(makeDemo({ 'index.html': withIndex })), ['no-start-index-with-group']);
 });

@@ -74,9 +74,24 @@ export function checkDemo(dir) {
     add('demo-core', 'js/demo-core.js', 'missing js/demo-core.js (copy it from the skill lib/ folder)');
   }
 
+  // The page's player configuration must be visible: a PLAYER_CONFIG literal.
+  const appPath = join(dir, 'js', 'app.js');
+  const pageCode = html + (existsSync(appPath) ? readFileSync(appPath, 'utf8') : '');
+  if (!/var PLAYER_CONFIG\s*=/.test(pageCode)) {
+    add('player-config', 'index.html', 'define the player configuration as `var PLAYER_CONFIG = { … }` in index.html or js/app.js');
+  }
+
   for (const file of listFiles(dir).filter((f) => /\.(html|js|mjs)$/.test(f))) {
     const text = readFileSync(file, 'utf8');
     const rel = relative(dir, file).replace(/\\/g, '/');
+    for (const m of text.matchAll(/serverDomain\s*:\s*['"]/g)) {
+      add('no-server-domain-literal', rel, `line ${lineOf(text, m.index)}: serverDomain overrides all play-server domains (no geo load balancing); set it only from ?server=`);
+    }
+    if (/var PLAYER_CONFIG\s*=/.test(text) && /\bgroup\s*:/.test(text)) {
+      for (const m of text.matchAll(/\bstartIndex\s*:/g)) {
+        add('no-start-index-with-group', rel, `line ${lineOf(text, m.index)}: for a group use source.group.startQuality, not startIndex`);
+      }
+    }
     // Player objects only: controller.stop() is the demo API and is fine.
     for (const m of text.matchAll(/\b\w*[pP]layer\s*\.stop\s*\(/g)) {
       add('no-stop', rel, `line ${lineOf(text, m.index)}: nanoPlayer has no stop(); use destroy() (NanoDemo.stopPlayer / controller.stop)`);
