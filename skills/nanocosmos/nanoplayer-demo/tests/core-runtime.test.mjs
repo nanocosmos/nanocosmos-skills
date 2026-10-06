@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 const D = require('../lib/demo-core.js');
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.c2lnbmF0dXJlLXZhbHVl';
 
-function pageConfig(id = 'b6638d50-3581-4349-8fb2-59b3406c2dde') {
+function pageConfig(id = 'group-under-test') {
   return {
     source: {
       group: { id, startQuality: 'medium', security: {} },

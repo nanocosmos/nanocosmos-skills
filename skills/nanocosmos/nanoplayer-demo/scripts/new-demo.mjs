@@ -13,8 +13,9 @@ export const TYPES = ['single-player', 'feature-showcase', 'multi-player', 'diag
 
 const SKILL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const WRAPPER_TYPES = new Set(['feature-wrapper']);
-// The group every template's PLAYER_CONFIG plays by default (replaced by --group).
-export const DEFAULT_GROUP = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
+// Templates ship without a group (there is no public demo group): PLAYER_CONFIG
+// has this empty placeholder, which --group fills in.
+const GROUP_PLACEHOLDER = "id: '',";
 const GROUP_RE = /^[A-Za-z0-9-]+$/;
 
 function searchTheme(dir, depth) {
@@ -63,7 +64,7 @@ export function scaffold({ type, dest, theme, title = 'nanoPlayer Demo', group, 
   writeFileSync(indexPath, html);
   if (group) {
     const pagePath = WRAPPER_TYPES.has(type) ? join(dest, 'js', 'app.js') : indexPath;
-    writeFileSync(pagePath, readFileSync(pagePath, 'utf8').split(DEFAULT_GROUP).join(group));
+    writeFileSync(pagePath, readFileSync(pagePath, 'utf8').replace(GROUP_PLACEHOLDER, "id: '" + group + "',"));
   }
   return dest;
 }
@@ -87,6 +88,7 @@ if (isMain) {
     const problems = checkDemo(resolve(dest));
     for (const p of problems) console.log(`FAIL [${p.rule}] ${p.file}: ${p.message}`);
     if (!problems.length) console.log(`OK: ${type} demo in ${resolve(dest)} passes check-demo`);
+    if (!group) console.log("No group ID set: rerun with --group <id>, set source.group.id in PLAYER_CONFIG, or open the page with ?group=<id>.");
     process.exit(problems.length ? 1 : 0);
   } catch (err) {
     console.error(err.message);

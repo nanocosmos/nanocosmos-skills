@@ -73,9 +73,17 @@ test('scaffold --group writes the group into the page config of every type', () 
     scaffold({ type, dest, theme, group: 'my-group-01' });
     const code = readFileSync(join(dest, type === 'feature-wrapper' ? 'js/app.js' : 'index.html'), 'utf8');
     const block = code.slice(code.indexOf('var PLAYER_CONFIG = {'), code.indexOf('};', code.indexOf('var PLAYER_CONFIG = {')));
-    assert.ok(block.includes("id: 'my-group-01'"), type + ': group in PLAYER_CONFIG');
-    assert.ok(!block.includes('b6638d50-3581-4349-8fb2-59b3406c2dde'), type + ': default group replaced');
+    assert.ok(block.includes("id: 'my-group-01',"), type + ': group in PLAYER_CONFIG');
+    assert.ok(!block.includes("id: '',"), type + ': placeholder replaced');
   }
+});
+
+test('without --group the page keeps the empty placeholder and the CLI says how to set one', () => {
+  const dest = join(tmp('npd-'), 'nogroup');
+  const out = execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/new-demo.mjs', import.meta.url)),
+    'single-player', dest, '--theme', stubTheme()], { encoding: 'utf8' });
+  assert.ok(readFileSync(join(dest, 'index.html'), 'utf8').includes("id: '',"));
+  assert.match(out, /No group ID set: .*--group <id>.*\?group=/);
 });
 
 test('scaffold rejects a group id that would break the page script', () => {

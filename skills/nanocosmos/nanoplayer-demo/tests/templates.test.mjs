@@ -2,9 +2,10 @@
 // reference only element ids that exist, and contain parseable scripts.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { scaffold, TYPES } from '../scripts/new-demo.mjs';
 import { checkDemo } from '../scripts/check-demo.mjs';
 
@@ -18,16 +19,33 @@ function inlineScripts(html) {
 const readTemplate = (type, file = 'index.html') =>
   readFileSync(new URL(`../templates/${type}/${file}`, import.meta.url), 'utf8');
 
-const DEFAULT_GROUP = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
 const MUTED = { 'multi-player': true, 'branded-page': true };
 const pageCode = (type) => type === 'feature-wrapper' ? readTemplate(type, 'js/app.js') : readTemplate(type);
+// No public group exists: templates must not ship a real group ID or stream name.
+const REAL_ID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\b(?!XXXXX-YYYYY)[A-Za-z0-9]{5}-[A-Za-z0-9]{5}\b/;
+
+test('no template, script or reference contains a real group ID or stream name', () => {
+  const files = [];
+  (function walk(dir) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== 'tests') walk(p); }
+      else if (/\.(html|js|mjs|md|css)$/.test(e.name)) files.push(p);
+    }
+  })(fileURLToPath(new URL('..', import.meta.url)));
+  for (const f of files) {
+    const text = readFileSync(f, 'utf8').replace(/[a-z]+(-[a-z]+)+/g, ''); // drop kebab-case words
+    const m = text.match(REAL_ID);
+    assert.equal(m, null, `${f} contains ${m && m[0]}`);
+  }
+});
 
 for (const type of TYPES) {
-  test(`${type}: explicit PLAYER_CONFIG plays the default group`, () => {
+  test(`${type}: explicit PLAYER_CONFIG with an empty group placeholder`, () => {
     const code = pageCode(type);
     const block = code.slice(code.indexOf('var PLAYER_CONFIG = {'), code.indexOf('};', code.indexOf('var PLAYER_CONFIG = {')));
     assert.ok(block.length > 0, 'PLAYER_CONFIG literal');
-    for (const part of ['group: {', "id: '" + DEFAULT_GROUP + "'", "startQuality: 'medium'", 'security: {}',
+    for (const part of ['group: {', "id: '',", "startQuality: 'medium'", 'security: {}',
       "rule: 'deviationOfMean2'", "method: 'server'", 'timeout: 20', 'autoplay: true', 'automute: true',
       'faststart: true', 'enableMediaOverQuic: true', "latencyControlMode: 'balancedadaptive'", "scaling: 'letterbox'"]) {
       assert.ok(block.includes(part), `${type} PLAYER_CONFIG missing ${part}`);

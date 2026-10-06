@@ -46,13 +46,12 @@ on Node 20 and 22; `node --test test/` breaks on Node 22).
 
 ## 3. Streams for demos
 
-- Default group in every template: `b6638d50-3581-4349-8fb2-59b3406c2dde`
-  (used across nanostream-development examples). The switch demo's second
-  group is `HX26g-YVe8D` used as `group.id` (passthrough name); confirm both
-  play without a token before sharing a public link.
-- Public demo org streams (safe in shared links): `CD6oL-2kE1g`,
-  `HX26g-YVe8D`; other streams of the demo orgs `CD6oL`, `HX26g`, `yPleE`,
-  `nNCcf`.
+- There is no public demo group. Templates ship with an empty
+  `source.group.id`; the requesting team supplies the group (`--group` when
+  scaffolding, or `?group=` in the link) and, for secured groups, a
+  short-lived JWT via `?token=`.
+- Never write real group IDs, stream names or tokens into the skill, its
+  templates or its docs; the template tests fail if one appears.
 - Customer streams: only with the requesting team's OK, and never with a
   long-lived token in the link.
 - Non-production environments (stage/dev) are internal-only. Never put them

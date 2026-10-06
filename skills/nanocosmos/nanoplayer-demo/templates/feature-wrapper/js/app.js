@@ -12,7 +12,7 @@
   var PLAYER_CONFIG = {
     source: {
       group: {
-        id: 'b6638d50-3581-4349-8fb2-59b3406c2dde', // bintu stream group (ABR). URL: ?group=
+        id: '',                 // your bintu stream group ID (required). URL: ?group=
         startQuality: 'medium', // high | medium-high | medium | medium-low | low (default low)
         security: {}            // secure playback: { jwtoken: '…' }. URL: ?token=
         // apiurl: 'https://bintu.nanocosmos.de' // optional, this is the default
@@ -38,13 +38,9 @@
   };
 
   // Groups to switch between; the label is shown on the buttons. URL: ?groups=a,b
-  // UNVERIFIED: 'HX26g-YVe8D' is a stream name used as group.id. It resolved a
-  // group in nanostream-development's test, but the docs define group.id as a
-  // bintu group ID: replace it with a real second group before sharing.
-  var GROUPS = [
-    { label: 'Group A', id: 'b6638d50-3581-4349-8fb2-59b3406c2dde' },
-    { label: 'Group B', id: 'HX26g-YVe8D' }
-  ];
+  // Fill in your bintu stream group IDs, e.g. { label: 'Camera 1', id: '…' }.
+  // Empty: the page starts with the group from PLAYER_CONFIG (if set).
+  var GROUPS = [];
 
   var D = NanoDemo;
   var $ = function (id) { return document.getElementById(id); };
@@ -132,7 +128,10 @@
   }
 
   var urlGroups = parseList(new URLSearchParams(location.search).get('groups'));
-  ui.groups.value = (urlGroups.length ? urlGroups : GROUPS.map(function (g) { return g.id; })).join(', ');
+  var startGroups = urlGroups.length ? urlGroups
+    : GROUPS.length ? GROUPS.map(function (g) { return g.id; })
+    : [D.sourceId(config)];
+  ui.groups.value = startGroups.filter(Boolean).join(', ');
   $('btnLoad').addEventListener('click', load);
   $('btnStop').addEventListener('click', function () { sp.destroy(); ui.buttons.textContent = ''; });
   ui.groups.addEventListener('keydown', function (e) { if (e.key === 'Enter') { load(); } });

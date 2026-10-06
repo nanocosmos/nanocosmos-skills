@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const D = require('../lib/demo-core.js');
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.c2lnbmF0dXJlLXZhbHVl';
-const GROUP = 'b6638d50-3581-4349-8fb2-59b3406c2dde';
+const GROUP = 'group-under-test';
 
 function pageConfig() {
   return {

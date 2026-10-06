@@ -61,6 +61,11 @@ Studio colors and stream-name defaults.
    node scripts/new-demo.mjs <type> <dest-dir> --title "Demo title" --group <group id>
    ```
 
+   There is no public demo group: templates ship with an empty
+   `source.group.id`, and the page asks for one until it is set. Use the
+   requesting team's group; never commit real group IDs or tokens to this
+   skill.
+
    It copies the template, `js/demo-core.js` (+ `js/player-wrapper.js` for
    `feature-wrapper`, the starting point to rename for a new wrapper) and the
    canonical `product-theme.css`, writes the group into `PLAYER_CONFIG`, and
