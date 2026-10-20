@@ -3,10 +3,10 @@ name: "nanostream-development"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.3.5
+  version: 1.3.6
   author: nanocosmos
   category: streaming
-  updated: 2026-09-23
+  updated: 2026-10-20
 ---
 
 # nanoStream Context
@@ -628,6 +628,11 @@ known — never invent values, never put credentials in a URL. Full parameter
 reference: the repo's `skills/nanocosmos/README.md`.
 
 # Changelog
+
+## 1.3.6 — 2026-10-20
+
+- `references/api-authentication.md`: credentials may also live in the user-level
+  `~/.config/nanocosmos/.env` (plugin installs); the support skill's `scripts/init_env.sh` creates it.
 
 ## 1.3.5 — 2026-10-12
 

@@ -11,12 +11,18 @@
 # itself may be able to do more.
 #
 # If the variables aren't already in the environment, they are loaded from the
-# first .env found among: <script dir>/.env, <script dir>/../.env (the skill
-# root), $PWD/.env. Never commit a .env.
+# first .env found among: <script dir>/.env, <script dir>/../.env, the
+# USER-LEVEL file ~/.config/nanocosmos/.env (RECOMMENDED; honours
+# XDG_CONFIG_HOME; same path on macOS, Linux and Windows/Git Bash), $PWD/.env.
+# NANOCOSMOS_ENV_FILE=<path> makes that file the only one read. The file is
+# shared with the nanoStream diagnostics/support skill, whose
+# scripts/init_env.sh creates it (pass this skill's scripts/.env.example to
+# append the analytics block).
 #
 # The repo-root .env is gitignored and lies outside every skill folder, so it
 # can never be committed or shipped in a skill-upload zip -- and it stays
-# repo-relative, so non-Claude tools using this repo find it too.
+# repo-relative, so non-Claude tools using this repo find it too. The
+# user-level file survives plugin updates, which replace the install folder.
 #
 # Set ENV_SH_OPTIONAL_CREDS=1 before sourcing to skip the missing-credentials
 # error -- for scripts that only need PY / the .env-provided PYTHON override
@@ -52,7 +58,12 @@ export PYTHONIOENCODING=utf-8
 # recommended best practice for services and automation, since it expires and
 # carries no login. The same token drives the bintu API scripts too.
 if [ -z "${NANO_API_TOKEN:-}" ] && { [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; }; then
-  for CANDIDATE in "${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${PWD}/.env"; do
+  if [ -n "${NANOCOSMOS_ENV_FILE:-}" ]; then
+    _ENV_CANDIDATES=("${NANOCOSMOS_ENV_FILE}")
+  else
+    _ENV_CANDIDATES=("${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${XDG_CONFIG_HOME:-${HOME}/.config}/nanocosmos/.env" "${PWD}/.env")
+  fi
+  for CANDIDATE in "${_ENV_CANDIDATES[@]}"; do
     if [ -f "${CANDIDATE}" ]; then
       # set -a exports everything the .env defines, so child processes
       # (e.g. the Python steps in query.sh) see the values too
@@ -62,6 +73,7 @@ if [ -z "${NANO_API_TOKEN:-}" ] && { [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${AN
       break
     fi
   done
+  unset _ENV_CANDIDATES
 fi
 
 # The .env may have pinned PYTHON= — honour it if the auto-detection above ran
@@ -111,7 +123,7 @@ analytics_token_cache_path() {
 if [ -z "${NANO_API_TOKEN:-}" ] && { [ -z "${ANALYTICS_EMAIL:-}" ] || [ -z "${ANALYTICS_PASSWORD:-}" ]; }; then
   if [ -z "${ENV_SH_OPTIONAL_CREDS:-}" ]; then
     echo "error: neither NANO_API_TOKEN nor ANALYTICS_EMAIL / ANALYTICS_PASSWORD set or found in any .env" >&2
-    echo "hint: add them to a .env next to the scripts (see scripts/.env.example)" >&2
+    echo "hint: add them to ~/.config/nanocosmos/.env or a .env next to the scripts (see scripts/.env.example)" >&2
     return 1 2>/dev/null || exit 1
   fi
 fi

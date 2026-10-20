@@ -3,10 +3,10 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.21.3
+  version: 2.22.0
   author: nanocosmos
   category: streaming-support
-  updated: 2026-10-14
+  updated: 2026-10-20
 ---
 
 # nanoStream Support & Diagnostics
@@ -22,7 +22,7 @@ Related skills: **`nanostream-development`** — player integration, playback co
 
 ## Setup (once)
 
-Scripts need `BINTU_API_KEY` — your organisation's bintu API key (Dashboard → Organisation → API Keys). Copy `scripts/.env.example` to a `.env` the scripts can find (see that file's header for locations) and fill it in, or export the variables in your shell. `get_stream_config.sh` degrades gracefully without it: it falls back to the public, keyless `GET /stream/<name>/group` route and prints a `warning:` on stderr about the missing key (see the table below for what the keyless result lacks). It does the same when a key is set but bintu answers 403 — a valid key for a *different* organisation is rejected on the stream routes where an anonymous request succeeds, so the warning names that as the likely cause. `get_stream_info.sh` needs no key at all and never sends one. The GOP scripts additionally need `ffprobe` on PATH (or set `FFPROBE_PATH`); the config script and the probe scripts' output parser need `python3` (scripts are either plain bash or plain Python; a `.sh`/`.py` pair has identical behaviour). If `ffprobe` isn't found, the GOP scripts fail immediately with an install hint (macOS: `brew install ffmpeg`; Debian/Ubuntu: `apt install ffmpeg`) rather than the misleading "no frame data received" error a real stream/connection issue would also produce.
+Scripts need `BINTU_API_KEY` — your organisation's bintu API key (Dashboard → Organisation → API Keys). Copy `scripts/.env.example` to a `.env` the scripts can find and fill it in, or export the variables in your shell. Locations, in lookup order: the skills repo root (git checkout), next to the scripts, the skill root, the user-level `~/.config/nanocosmos/.env` (plugin install; same path on macOS, Linux and Windows; `bash scripts/init_env.sh` creates it and appends further `.env.example` files passed as arguments), the current directory. `NANOCOSMOS_ENV_FILE=<path>` makes the scripts read only that file. `get_stream_config.sh` degrades gracefully without it: it falls back to the public, keyless `GET /stream/<name>/group` route and prints a `warning:` on stderr about the missing key (see the table below for what the keyless result lacks). It does the same when a key is set but bintu answers 403 — a valid key for a *different* organisation is rejected on the stream routes where an anonymous request succeeds, so the warning names that as the likely cause. `get_stream_info.sh` needs no key at all and never sends one. The GOP scripts additionally need `ffprobe` on PATH (or set `FFPROBE_PATH`); the config script and the probe scripts' output parser need `python3` (scripts are either plain bash or plain Python; a `.sh`/`.py` pair has identical behaviour). If `ffprobe` isn't found, the GOP scripts fail immediately with an install hint (macOS: `brew install ffmpeg`; Debian/Ubuntu: `apt install ffmpeg`) rather than the misleading "no frame data received" error a real stream/connection issue would also produce.
 
 **Best practice for API access outside this shell:** the raw API key never expires and grants full org control — anywhere a credential is handed to something else (a service, CI job, dashboard, status page, or another person), mint an expiring, audience-scoped **access token** with `scripts/create_access_token.sh` instead and use that (`x-bintu-token` header on the bintu API, `x-access-token` on the metrics API). Details and user-scoping: `references/nanostream-token-generation.md`.
 

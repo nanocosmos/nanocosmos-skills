@@ -10,7 +10,11 @@
 #
 # If BINTU_API_KEY isn't already in the environment, it is loaded from the
 # first .env found among: <script dir>/.env, <script dir>/../.env (the skill
-# root), $PWD/.env. Never commit a .env.
+# root), the USER-LEVEL file ~/.config/nanocosmos/.env (RECOMMENDED; honours
+# XDG_CONFIG_HOME; same path on macOS, Linux and Windows/Git Bash), $PWD/.env.
+# NANOCOSMOS_ENV_FILE=<path> makes that file the only one read (CI, services,
+# switching organisations). scripts/init_env.sh creates the user-level file,
+# which survives plugin updates. Never commit a .env.
 #
 # Set ENV_SH_OPTIONAL_KEY=1 before sourcing to skip the missing-BINTU_API_KEY
 # error -- used by probe_stream_unsecure.sh (needs .env for FFPROBE_PATH but
@@ -34,7 +38,12 @@ if [ -z "${BINTU_API_KEY}" ] || [ -z "${FFPROBE_PATH}" ]; then
   # that sets the key per call must not be overridden by the repo-root .env
   _PRESET_BINTU_API_KEY="${BINTU_API_KEY}"
   _PRESET_NANO_API_TOKEN="${NANO_API_TOKEN}"
-  for CANDIDATE in "${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${PWD}/.env"; do
+  if [ -n "${NANOCOSMOS_ENV_FILE}" ]; then
+    _ENV_CANDIDATES=("${NANOCOSMOS_ENV_FILE}")
+  else
+    _ENV_CANDIDATES=("${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${XDG_CONFIG_HOME:-${HOME}/.config}/nanocosmos/.env" "${PWD}/.env")
+  fi
+  for CANDIDATE in "${_ENV_CANDIDATES[@]}"; do
     if [ -f "${CANDIDATE}" ]; then
       ENV_FILE_DIR="$(cd "$(dirname "${CANDIDATE}")" && pwd)"
       # set -a exports everything the .env defines, so child processes
@@ -47,7 +56,7 @@ if [ -z "${BINTU_API_KEY}" ] || [ -z "${FFPROBE_PATH}" ]; then
   done
   [ -n "${_PRESET_BINTU_API_KEY}" ] && BINTU_API_KEY="${_PRESET_BINTU_API_KEY}"
   [ -n "${_PRESET_NANO_API_TOKEN}" ] && NANO_API_TOKEN="${_PRESET_NANO_API_TOKEN}"
-  unset _PRESET_BINTU_API_KEY _PRESET_NANO_API_TOKEN
+  unset _PRESET_BINTU_API_KEY _PRESET_NANO_API_TOKEN _ENV_CANDIDATES
 fi
 
 # Guarantee the values are exported even when they came from the parent shell
@@ -80,17 +89,17 @@ export BINTU_AUTH_HEADER
 
 if [ -n "${ENV_SH_REQUIRE_KEY}" ] && [ -z "${BINTU_API_KEY}" ]; then
   echo "error: this script needs the real org API key (a NANO_API_TOKEN is not enough here)" >&2
-  echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
+  echo "hint: add BINTU_API_KEY=<your orga API key> to ~/.config/nanocosmos/.env or a .env next to the scripts (see scripts/.env.example; scripts/init_env.sh creates it)" >&2
   return 1 2>/dev/null || exit 1
 fi
 
 if [ -z "${BINTU_API_KEY}" ] && [ -z "${NANO_API_TOKEN}" ] && [ -z "${ENV_SH_OPTIONAL_KEY}" ]; then
   if [ -n "${ENV_SH_PUBLIC_FALLBACK}" ]; then
     echo "warning: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env -- falling back to the public (keyless) bintu stream route" >&2
-    echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example) for the authenticated lookup" >&2
+    echo "hint: add BINTU_API_KEY=<your orga API key> to ~/.config/nanocosmos/.env or a .env next to the scripts (see scripts/.env.example; scripts/init_env.sh creates it) for the authenticated lookup" >&2
   else
     echo "error: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env" >&2
-    echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
+    echo "hint: add BINTU_API_KEY=<your orga API key> to ~/.config/nanocosmos/.env or a .env next to the scripts (see scripts/.env.example; scripts/init_env.sh creates it)" >&2
     return 1 2>/dev/null || exit 1
   fi
 fi

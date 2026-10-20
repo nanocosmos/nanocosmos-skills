@@ -12,8 +12,10 @@ Resolution order (same as env.sh):
    environment (possibly empty) and is returned as-is -- env.sh has done the
    lookup and printed any warning, so nothing is repeated here.
 2. Otherwise, if BINTU_API_KEY or FFPROBE_PATH is not set in the environment,
-   the first .env found among <script dir>/.env, <script dir>/../.env
-   (the skill root), $PWD/.env is read. Values
+   the first .env found among <script dir>/.env, <script dir>/../.env (the
+   skill root), the user-level ~/.config/nanocosmos/.env (RECOMMENDED; honours
+   XDG_CONFIG_HOME; same path on macOS, Linux and Windows), $PWD/.env is
+   read. NANOCOSMOS_ENV_FILE=<path> makes that file the only one read. Values
    already present in the environment are never overridden by the file.
 3. The auth header is built from BINTU_API_KEY (x-bintu-apikey) or, failing
    that, NANO_API_TOKEN (x-bintu-token). The raw key wins when both are set.
@@ -35,12 +37,18 @@ import os
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_CANDIDATES = [
+# user-level config: one path on macOS, Linux and Windows (expanduser resolves
+# the profile folder on all three); survives plugin updates
+USER_ENV = os.path.join(
+    os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config"),
+    "nanocosmos", ".env")
+ENV_CANDIDATES = [os.environ["NANOCOSMOS_ENV_FILE"]] if os.environ.get("NANOCOSMOS_ENV_FILE") else [
     os.path.join(SCRIPT_DIR, ".env"),
     os.path.join(SCRIPT_DIR, "..", ".env"),
+    USER_ENV,                                        # RECOMMENDED for a plugin install
     os.path.join(os.getcwd(), ".env"),
 ]
-HINT = "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)"
+HINT = "hint: add BINTU_API_KEY=<your orga API key> to ~/.config/nanocosmos/.env or a .env next to the scripts (see scripts/.env.example; scripts/init_env.sh creates it)"
 
 ENV_FILE_DIR = None  # directory the .env was found in (anchors a relative FFPROBE_PATH)
 
