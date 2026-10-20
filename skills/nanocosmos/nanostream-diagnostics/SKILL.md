@@ -3,10 +3,10 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.20.0
+  version: 2.21.3
   author: nanocosmos
   category: streaming-support
-  updated: 2026-09-26
+  updated: 2026-10-14
 ---
 
 # nanoStream Support & Diagnostics
@@ -22,7 +22,7 @@ Related skills: **`nanostream-development`** — player integration, playback co
 
 ## Setup (once)
 
-Scripts need `BINTU_API_KEY` — your organisation's bintu API key (Dashboard → Organisation → API Keys). Copy `scripts/.env.example` to a `.env` the scripts can find (see that file's header for locations) and fill it in, or export the variables in your shell. The GOP scripts additionally need `ffprobe` on PATH (or set `FFPROBE_PATH`); the config script needs `python3`. If `ffprobe` isn't found, the GOP scripts fail immediately with an install hint (macOS: `brew install ffmpeg`; Debian/Ubuntu: `apt install ffmpeg`) rather than the misleading "no frame data received" error a real stream/connection issue would also produce.
+Scripts need `BINTU_API_KEY` — your organisation's bintu API key (Dashboard → Organisation → API Keys). Copy `scripts/.env.example` to a `.env` the scripts can find (see that file's header for locations) and fill it in, or export the variables in your shell. `get_stream_config.sh` degrades gracefully without it: it falls back to the public, keyless `GET /stream/<name>/group` route and prints a `warning:` on stderr about the missing key (see the table below for what the keyless result lacks). It does the same when a key is set but bintu answers 403 — a valid key for a *different* organisation is rejected on the stream routes where an anonymous request succeeds, so the warning names that as the likely cause. `get_stream_info.sh` needs no key at all and never sends one. The GOP scripts additionally need `ffprobe` on PATH (or set `FFPROBE_PATH`); the config script and the probe scripts' output parser need `python3` (scripts are either plain bash or plain Python; a `.sh`/`.py` pair has identical behaviour). If `ffprobe` isn't found, the GOP scripts fail immediately with an install hint (macOS: `brew install ffmpeg`; Debian/Ubuntu: `apt install ffmpeg`) rather than the misleading "no frame data received" error a real stream/connection issue would also produce.
 
 **Best practice for API access outside this shell:** the raw API key never expires and grants full org control — anywhere a credential is handed to something else (a service, CI job, dashboard, status page, or another person), mint an expiring, audience-scoped **access token** with `scripts/create_access_token.sh` instead and use that (`x-bintu-token` header on the bintu API, `x-access-token` on the metrics API). Details and user-scoping: `references/nanostream-token-generation.md`.
 
@@ -36,10 +36,10 @@ All take a stream name (`XXXXX-YYYYY`) as the first argument and work for stream
 
 | Script | Needs key | Output |
 |---|---|---|
-| `get_stream_info.sh <name>` | yes | CSV `<secure\|unsecure>,<live\|not live>,<raw state>` — playback-token security + platform state |
-| `probe_stream_unsecure.sh <name>` | no | Real-media playback probe. CSV `<gop_s>,<video_codec>,<profile>,<level>,<chroma>,<w>x<h>,<video_bitrate>,<audio_codec>,<audio_bitrate>` — pulls actual frames and reports the real keyframe interval plus what the encoder is really sending, not just its configured settings |
+| `get_stream_info.sh <name>` | no | CSV `<secure\|unsecure>,<live\|not live>,<raw state>` — playback-token security + platform state. Reads the public `GET /stream/<name>` route anonymously on purpose: the two fields it needs are always there, and a key of another organisation would get the request rejected |
+| `probe_stream_unsecure.sh <name>` | no | Real-media playback probe (ffprobe; parses via `parse_probe_output.py`). CSV `<gop_s>,<video_codec>,<profile>,<level>,<chroma>,<w>x<h>,<video_bitrate>,<audio_codec>,<audio_bitrate>` — pulls actual frames and reports the real keyframe interval plus what the encoder is really sending, not just its configured settings |
 | `probe_stream_secure.sh <name>` | yes | Same, for token-secured playback (mints a JWT internally) |
-| `get_stream_config.sh <name>` | yes | JSON: stream architecture — `type` (`single`/`group`/`daisy`), push destination, member profiles |
+| `get_stream_config.py <name>` / `get_stream_config.sh <name>` | optional | JSON: stream architecture — `type` (`single`/`group`/`daisy`), push destination, member profiles. Without a key it uses the public `GET /stream/<name>/group` route and warns on stderr, and retries keyless (with its own warning) when the configured key is rejected with 403, i.e. it belongs to a different organisation than the stream; `single`/`group` resolve fully, but old-style `daisy` chains cannot be identified (`/transcoding_profiles` needs a key) and are reported as `single` with an `rtmp://127.0.0.1/...` push URL plus a second warning |
 | `get_transcode_profiles.sh <name>` | yes | JSON: all transcoding profiles of the organisation |
 | `get_jwt_token.sh [name] [--days N \| --exp EPOCH]` | yes | Orga-wide playback JWT (for demo player / secure playback tests). Stream name is optional context only — token is orga-wide regardless. Default expiry 1 hour; `--days`/`--exp` mint a longer-lived one |
 | `create_access_token.sh [--days N] [--aud LIST] [--iss USER_ID] [--from-login]` | yes* | Expiring bintu/metrics ACCESS token via the Cloud Token Service (max 365 days). Best practice: use this wherever a credential leaves your shell (services, CI, dashboards) instead of the raw org API key — `x-bintu-token` header on the bintu API, `x-access-token` on the metrics API, `NANO_API_TOKEN` for the skill scripts. *`--from-login` mints from `NANOSTREAM_EMAIL`/`NANOSTREAM_PASSWORD` instead of the API key. Background: `references/nanostream-token-generation.md` |

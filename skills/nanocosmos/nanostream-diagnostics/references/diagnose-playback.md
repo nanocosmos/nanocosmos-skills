@@ -22,10 +22,10 @@ severity_default: MEDIUM
 A viewer or customer reports problems watching a stream: buffering, freezing, high latency, or the player not loading.
 
 ### Steps
-1. Test with the official demo player. **Check whether the stream is secure first** — `scripts/get_stream_info.sh` returns `secure`/`unsecure` as its first field — since the demo player URL is different for each, and pointing a secure stream at the non-secure URL fails to load or throws an auth error that looks like a player/buffering problem but isn't one:
+1. Test with the official demo player. **Check whether the stream is secure first** (secure playback is an organization-wide setting, so all streams of a secure organization need a token) — since the demo player URL is different for each, and pointing a secure stream at the non-secure URL fails to load or throws an auth error that looks like a player/buffering problem but isn't one:
    - Non-secure account:
      `https://demo.nanocosmos.de/nanoplayer/release/nanoplayer.html?group.id=XXXXX-YYYYY`
-   - Secure account (JWT token required — mint one with `scripts/get_jwt_token.sh`):
+   - Secure account (JWT token required — generated server-side with the organization API key):
      `https://demo.nanocosmos.de/nanoplayer/release/nanoplayer.html?group.id=XXXXX-YYYYY&group.security.jwtoken=[jwtoken]`
 
    (replace `XXXXX-YYYYY` with the stream name or UID)

@@ -29,7 +29,7 @@ A customer asks about enabling live captions, transcription, or multi-language t
 
 ### Requirements
 - Feature must be explicitly enabled for the organization (may require additional pricing — contact sales)
-- Secure playback must also be enabled
+- Secure playback must also be enabled for the organization (an organization-wide setting, not per stream)
 - Requires custom integration (not built into default player UI)
 - Stream must be re-ingested after enabling captions for settings to take effect
 - Some ASR services require 24-hour advance notice before use

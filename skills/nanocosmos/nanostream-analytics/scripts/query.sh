@@ -93,7 +93,9 @@ fi
 URL="${ANALYTICS_BASE}${RAW_PATH}"
 [ -n "${QUERY}" ] && URL="${URL}?${QUERY}"
 
-BODY_FILE="$(mktemp)"
+# Explicit template: a bare mktemp on macOS ignores $TMPDIR and writes to
+# /var/folders/..., which sandboxed runners (e.g. Claude Code) refuse.
+BODY_FILE="$(mktemp "${TMPDIR:-/tmp}/nsc-query.XXXXXX")"
 trap 'rm -f "${BODY_FILE}"' EXIT
 
 set +e

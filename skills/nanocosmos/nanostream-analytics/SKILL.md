@@ -3,10 +3,10 @@ name: "nanostream-analytics"
 description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login) or an expiring access token (NANO_API_TOKEN, recommended for services)."
 license: (c) nanocosmos
 metadata:
-  version: 1.2.0
+  version: 1.3.1
   author: nanocosmos
   category: analytics
-  updated: 2026-08-25
+  updated: 2026-10-14
 ---
 
 # nanoStream Analytics API
@@ -169,6 +169,24 @@ One caveat that is *not* handled: on Windows the cached token is effectively a
 normally-readable file in `%TEMP%`, whatever permissions the script asks for. It is
 short-lived and is not the password, but do not describe it as protected there.
 
+## Sandboxed runners (Claude Code on macOS)
+
+Inside a sandbox that only allows writes to `$TMPDIR` and the project folder
+(Claude Code's default on macOS), two things trip the bash scripts:
+
+- **A bare `mktemp` ignores `$TMPDIR` on macOS** and writes to
+  `/var/folders/…`, which the sandbox refuses. The scripts therefore always
+  pass an explicit template (`mktemp "${TMPDIR:-/tmp}/nsc-….XXXXXX"`) — keep
+  it that way when adding a script.
+- **bash 3.2 (the macOS default) falls back to the current directory for
+  heredoc temp files** inside the sandbox. Run the scripts by absolute path
+  from a writable folder (your project), not after `cd` into the skill folder,
+  or every inline-Python script fails with
+  `cannot create temp file for here document`.
+
+The sandbox also needs network access to `metrics-api.nanostream.cloud` (and
+`token.nanostream.cloud` when an access token is minted).
+
 
 ## Read this before interpreting any result
 
@@ -189,6 +207,19 @@ short-lived and is not the password, but do not describe it as protected there.
 - **Top lists are capped at 1,000 and not exact** — an entry can be missing or come
   back too low, the more so over long ranges. Fine for ranking; a narrower query,
   e.g. explicit `streams`, is what makes the figures exact.
+- **Long ranges are rejected per route** (HTTP 400, `101004`, the body names the
+  limit — 7, 15 or 30 days depending on the route as of 2026-10-14; these limits
+  are temporary and may be raised). Split into windows and sum client-side;
+  `references/query-semantics.md` lists the limits seen so far.
+- **`/v2/world/usage` sums to slightly less than the usage timeseries** — traffic
+  with no resolvable country is left out of the map. Country shares are shares
+  of the resolved part; quote totals from the timeseries.
+- **Player-side metrics can start mid-history.** Playtime, OS/browser, latency,
+  startup and buffering exist only from the day the player was instrumented;
+  usage, playback starts and concurrent viewers are server-side and go back
+  further. Check the daily playtime series for zero days before any
+  month-over-month comparison — otherwise "13× more watch time" is just
+  instrumentation coverage.
 - All times are **UTC**; `from` rounds down and `to` rounds up to the minute.
   Convert local incident times before querying.
 - H5Live routes return data only if the **player was instrumented** — an empty

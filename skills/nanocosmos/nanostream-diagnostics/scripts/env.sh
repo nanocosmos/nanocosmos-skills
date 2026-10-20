@@ -13,23 +13,41 @@
 # root), $PWD/.env. Never commit a .env.
 #
 # Set ENV_SH_OPTIONAL_KEY=1 before sourcing to skip the missing-BINTU_API_KEY
-# error -- used by probe_stream_unsecure.sh, which needs .env for FFPROBE_PATH
-# but never touches BINTU_API_KEY.
+# error -- used by probe_stream_unsecure.sh (needs .env for FFPROBE_PATH but
+# never touches BINTU_API_KEY) and get_stream_info.sh (public route only).
+#
+# Set ENV_SH_PUBLIC_FALLBACK=1 before sourcing for scripts that can fall back
+# to the public, keyless bintu stream routes (GET /stream/<name> and
+# GET /stream/<name>/group): a missing credential then only prints a WARNING
+# on stderr and leaves BINTU_AUTH_HEADER empty -- the script must cope with
+# an empty header. Used by get_stream_config.sh.
+#
+# Python scripts use env.py, which mirrors this file; when a bash wrapper has
+# already sourced env.sh, env.py picks up the exported BINTU_AUTH_HEADER and
+# does not repeat the lookup or the warning.
 
 ENV_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -z "${BINTU_API_KEY}" ] || [ -z "${FFPROBE_PATH}" ]; then
+  # a credential the caller already set wins over the .env file -- e.g.
+  # BINTU_API_KEY="$KEY" bash scripts/get_stream_config.sh ... or a wrapper
+  # that sets the key per call must not be overridden by the repo-root .env
+  _PRESET_BINTU_API_KEY="${BINTU_API_KEY}"
+  _PRESET_NANO_API_TOKEN="${NANO_API_TOKEN}"
   for CANDIDATE in "${ENV_SCRIPT_DIR}/.env" "${ENV_SCRIPT_DIR}/../.env" "${PWD}/.env"; do
     if [ -f "${CANDIDATE}" ]; then
       ENV_FILE_DIR="$(cd "$(dirname "${CANDIDATE}")" && pwd)"
       # set -a exports everything the .env defines, so child processes
-      # (e.g. the python3 step in get_stream_config.sh) see the keys too
+      # (e.g. get_stream_config.py / parse_probe_output.py) see the keys too
       set -a
       source "${CANDIDATE}"
       set +a
       break
     fi
   done
+  [ -n "${_PRESET_BINTU_API_KEY}" ] && BINTU_API_KEY="${_PRESET_BINTU_API_KEY}"
+  [ -n "${_PRESET_NANO_API_TOKEN}" ] && NANO_API_TOKEN="${_PRESET_NANO_API_TOKEN}"
+  unset _PRESET_BINTU_API_KEY _PRESET_NANO_API_TOKEN
 fi
 
 # Guarantee the values are exported even when they came from the parent shell
@@ -67,9 +85,14 @@ if [ -n "${ENV_SH_REQUIRE_KEY}" ] && [ -z "${BINTU_API_KEY}" ]; then
 fi
 
 if [ -z "${BINTU_API_KEY}" ] && [ -z "${NANO_API_TOKEN}" ] && [ -z "${ENV_SH_OPTIONAL_KEY}" ]; then
-  echo "error: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env" >&2
-  echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
-  return 1 2>/dev/null || exit 1
+  if [ -n "${ENV_SH_PUBLIC_FALLBACK}" ]; then
+    echo "warning: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env -- falling back to the public (keyless) bintu stream route" >&2
+    echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example) for the authenticated lookup" >&2
+  else
+    echo "error: neither BINTU_API_KEY nor NANO_API_TOKEN set or found in any .env" >&2
+    echo "hint: add BINTU_API_KEY=<your orga API key> to a .env next to the scripts (see scripts/.env.example)" >&2
+    return 1 2>/dev/null || exit 1
+  fi
 fi
 
 # ffprobe is needed by the probe_stream_*.sh scripts only. A relative

@@ -7,7 +7,8 @@
 #e.g. 2.00,H264,High,4.0,4:2:0,1920x1080,3200000,AAC,128000
 #
 #Secure (JWT) playback variant -- generates an orga-wide JWT via
-#get_jwt_token.sh (needs BINTU_API_KEY). Requires ffprobe and python3.
+#get_jwt_token.sh (needs BINTU_API_KEY). Requires ffprobe and python3
+#(for parse_probe_output.py).
 #
 #This is the real end-to-end playback probe used across this skill as the
 #"does it actually work" check (see check-stream-live.md, slow-stream-start.md)
@@ -65,7 +66,7 @@ if ! command -v "${FFPROBE_PATH}" >/dev/null 2>&1; then
 fi
 
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "error: python3 not found (needed to parse ffprobe's JSON output)" >&2
+  echo "error: python3 not found (needed by parse_probe_output.py to parse ffprobe's JSON output)" >&2
   exit 1
 fi
 
@@ -76,90 +77,9 @@ LONGEST_SPAN="0"
 LAST_MEDIA_INFO=""
 
 parse_probe_json() {
-  # Takes the ffprobe JSON via a temp file path (arg 1), not stdin --
-  # `python3 -` (read the script itself from the heredoc below) already
-  # consumes stdin for the script source, so piping data into this
-  # function's stdin never reaches the running script's sys.stdin
-  # (confirmed empirically: sys.stdin.read() came back length 0 despite a
-  # non-empty pipe). A temp file sidesteps that conflict entirely.
-  PROBE_RAW_FILE="$1" python3 - <<'PYEOF'
-import json, os, sys
-
-def chroma_from_pix_fmt(pf):
-    if not pf:
-        return ""
-    if "420" in pf:
-        return "4:2:0"
-    if "422" in pf:
-        return "4:2:2"
-    if "444" in pf:
-        return "4:4:4"
-    return pf
-
-def level_str(lv):
-    try:
-        return "%.1f" % (float(lv) / 10)
-    except (TypeError, ValueError):
-        return ""
-
-try:
-    with open(os.environ["PROBE_RAW_FILE"]) as f:
-        data = json.load(f)
-except Exception:
-    print("EMPTY")
-    print("")
-    sys.exit(0)
-
-streams = data.get("streams", [])
-video = next((s for s in streams if s.get("codec_type") == "video"), None)
-audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
-
-if video:
-    width = video.get("width")
-    height = video.get("height")
-    res = "%sx%s" % (width, height) if width and height else ""
-    video_fields = ",".join([
-        (video.get("codec_name") or "").upper(),
-        video.get("profile") or "",
-        level_str(video.get("level")),
-        chroma_from_pix_fmt(video.get("pix_fmt")),
-        res,
-        str(video.get("bit_rate") or ""),
-    ])
-else:
-    video_fields = ",,,,,"
-
-if audio:
-    audio_fields = ",".join([
-        (audio.get("codec_name") or "").upper(),
-        str(audio.get("bit_rate") or ""),
-    ])
-else:
-    audio_fields = ","
-
-frames = data.get("frames", [])
-first = last = None
-keyframes = []
-for f in frames:
-    if "pts_time" not in f:
-        continue
-    pts = float(f["pts_time"])
-    if first is None:
-        first = pts
-    last = pts
-    if f.get("pict_type") == "I":
-        keyframes.append(pts)
-
-if len(keyframes) >= 2:
-    diffs = [keyframes[i + 1] - keyframes[i] for i in range(len(keyframes) - 1)]
-    print("GOP:%.2f" % (sum(diffs) / len(diffs)))
-elif last is not None:
-    print("SPAN:%.2f" % (last - (first or last)))
-else:
-    print("EMPTY")
-
-print("%s,%s" % (video_fields, audio_fields))
-PYEOF
+  # ffprobe JSON (file path in arg 1) -> two lines: GOP:/SPAN:/EMPTY and the
+  # media CSV -- see parse_probe_output.py for the format
+  python3 "${SCRIPT_DIR}/parse_probe_output.py" "$1"
 }
 
 for ATTEMPT in $(seq 1 ${MAX_ATTEMPTS}); do
@@ -177,7 +97,7 @@ for ATTEMPT in $(seq 1 ${MAX_ATTEMPTS}); do
     continue
   fi
 
-  RAW_FILE=$(mktemp)
+  RAW_FILE=$(mktemp "${TMPDIR:-/tmp}/nsc-probe.XXXXXX")
   echo "$RAW" > "$RAW_FILE"
   PARSED=$(parse_probe_json "$RAW_FILE")
   rm -f "$RAW_FILE"

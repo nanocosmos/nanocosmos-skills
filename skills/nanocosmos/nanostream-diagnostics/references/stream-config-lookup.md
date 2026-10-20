@@ -34,7 +34,7 @@ Use this whenever a question concerns stream architecture, transcode/bitrate pro
 
 ### Steps
 
-1. **Run the config script** with any known stream name:
+1. **Run the config script** with any known stream name (`get_stream_config.py` is the implementation; `get_stream_config.sh` is the bash entry point with identical behaviour):
    ```bash
    scripts/get_stream_config.sh <stream_name>
    ```

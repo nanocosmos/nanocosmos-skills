@@ -44,6 +44,8 @@ The platform state (from `get_stream_info.sh`) can sometimes lag — a stream ma
    ```
    Returns CSV: `<secure|unsecure>,<live|not live>,<raw state>` — the third column is the platform's raw state (`live` / `ended` / `created`).
 
+   **Which stream name to use for playback and probes:** a stream record names the stream twice — `ingest.rtmp.streamname` (publish side) and `playout.rtmp[0].streamname` / `playout.h5live[0].rtmp.streamname` (playback side) — and the two can differ. Every playback-facing step (the probes below, demo-player/ffplay URLs, player configs) takes the **first playout entry's name**, never the ingest name. Note also that the public, keyless `GET /stream/<id-or-name>` route returns **no `ingest` object** (for any stream, secure or not; verified 2026-10-12) — the stream's own org key or the admin route adds it — so a UUID resolved through the public route only ever yields the playout name, which is the one you want anyway. (`GET /stream/<name>/group` on an ABR group member is the one keyless read that does carry `ingest`; don't rely on it.)
+
 3. **If the CSV contains `not live`**
    The stream is offline according to the platform. No further checks are needed.
    → **Result: not live** (if raw state is `ended`, suggest the customer verify their encoder is still broadcasting — in OBS: click "Start Streaming")
@@ -65,6 +67,12 @@ The platform state (from `get_stream_info.sh`) can sometimes lag — a stream ma
    - **Returns an error**: the platform state is stale — the encoder has stopped even though the platform still shows "live".
      → **Result: not live (stale state)**
 
+**A clean CSV here does not rule out a broken playback path.** This probe pulls frames from *a*
+live connection to the stream name — if two sources are publishing to the same stream name at
+once (duplicate ingest), the probe can succeed against a connection that isn't the one viewers are
+actually routed to, while real playback still fails. If playback still fails despite `live`
+state (and, now, a clean probe), make sure only one encoder is publishing to that stream name
+before concluding the report doesn't match reality.
 ### Output to Pass to the Calling Procedure
 
 - `status`: `live` or `not live`
@@ -82,6 +90,7 @@ GOP length and keyframe distance are the same metric — the average time in sec
 ### Contact nanocosmos support when
 - Script fails to execute or returns unexpected output
 - Platform reports `live` but the playback probe returns an error consistently across retries
-
+- Platform reports `live`, the probe even returns a clean result, but the customer still can't
+  play the stream, and only one encoder is publishing to that stream name
 ### Scope
 These scripts reach only streams of the organisation whose API key is configured — your own.

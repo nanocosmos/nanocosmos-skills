@@ -3,7 +3,7 @@ name: "nanostream-development"
 description: "Manage Live Streams for the nanocosmos platform (nanoStream core), including live playback"
 license: (c) nanocosmos
 metadata:
-  version: 1.3.3
+  version: 1.3.5
   author: nanocosmos
   category: streaming
   updated: 2026-09-23
@@ -558,6 +558,33 @@ Docs: https://docs.nanocosmos.net/docs/cloud/cloud_overview
 
 Bintu API Docs: https://doc.pages.nanocosmos.de/bintuapi-docs
 
+## Stream record: ingest vs. playout stream names — use the PLAYOUT name for playback
+
+A bintu stream record carries the stream name in two places, and they are not guaranteed
+to be the same string:
+
+- `ingest.rtmp.streamname` (+ `ingest.rtmp.url`) — the **publish-side** name the encoder
+  uses. Ingest-only.
+- `playout.rtmp[0].streamname` / `playout.h5live[0].rtmp.streamname` — the **playback**
+  name. This is what goes into player configs, demo-player URLs, emulated MP4/M3U8 URLs,
+  ffplay pulls and playback probes.
+
+Rules (verified 2026-10-12 against the live API):
+
+- **For playback, always read the first playout entry's name** — never the ingest name.
+  Ingest and playout names can differ; a player given the ingest name may play nothing.
+- The public, keyless `GET https://bintu.nanocosmos.de/stream/<id-or-name>` route returns
+  **no top-level `ingest` object at all** (and no `tags`/`transcoding`) — for every stream,
+  secure or not. Only the playout block is there. The stream's *own* org API key adds
+  `ingest` and the other fields; a key of another org gets the request rejected (403)
+  where the anonymous one succeeds. Code that reads `stream.ingest.rtmp.streamname`
+  from a keyless read of that route throws on every stream.
+- Unknown stream: a well-formed but unknown name or UUID answers **404** `Stream not found`
+  (code 3001); only a malformed name answers 403 `Access denied` (code 2001).
+- The UUID in `playout.*[].id` / `streamgroup` is the same ID the player's `source.group.id`
+  takes; the `playout.h5live[0].server.*` hosts tell you whether the stream is
+  token-secured (`bintu-h5live-secure` / `authstream`) or open (`bintu-h5live` / `stream`).
+
 ## API authentication (bintu + metrics)
 
 `references/api-authentication.md` — the one place for how the platform APIs
@@ -601,6 +628,18 @@ known — never invent values, never put credentials in a URL. Full parameter
 reference: the repo's `skills/nanocosmos/README.md`.
 
 # Changelog
+
+## 1.3.5 — 2026-10-12
+
+- Bintu API: the "no `ingest` keyless" rule holds for `/stream/<id>`; `/stream/<id>/group` on an
+  ABR group member returns the full record keyless (internal note). Unknown well-formed names
+  answer 404, not 403 — only malformed names get 403.
+
+## 1.3.4 — 2026-10-12
+
+- Bintu API: new "Stream record: ingest vs. playout stream names" section — playback always
+  uses the first playout entry's name, never the ingest name (they can differ); the public
+  keyless `/stream/<id>` route returns no `ingest` object for any stream (admin route only).
 
 ## 1.3.3 — 2026-09-23
 

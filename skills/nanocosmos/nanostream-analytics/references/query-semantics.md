@@ -237,3 +237,68 @@ route:
 
 Note the naming trap in the second row: what the API calls **stop reasons are the
 player's _pause_ reasons**. Do not read them as stream-ending events.
+
+Two codes that tend to dominate and have a known, actionable reading:
+
+- **Pause reason `interactionrequired`** — the browser blocked autoplay with
+  sound until the viewer interacts. On mobile-heavy audiences it can be the
+  majority of all pauses. Remedy: muted autoplay, i.e. `playback.automute`
+  (with `autoplay`) in the nanoStream Player config.
+- **Playback start error `2001`** ("The requested stream can not be found") —
+  players request a stream that is not live: usually a lobby or page linking to
+  a stream that has ended or been renamed. Remedy on the integration side:
+  only offer streams that are currently live.
+
+## Player-side vs. server-side metrics
+
+H5Live routes (`/v2/h5live/...`, `/v2/world/playtime`, `/v2/world/latency`)
+only contain data from players configured to send metrics, and only from the
+day that started. Usage (`/v2/usage/...`), playback starts
+(`/v2/playback/start/...`), concurrent viewers and `/v2/world/playoutIngest`
+are counted server-side. So a month-over-month change in a player-side metric
+can be nothing but instrumentation coverage: check the daily
+`/v2/h5live/playtime/timeseries` for zero days in the comparison period, and
+compare only server-side figures across it.
+
+## Country shares depend on the measure
+
+"Top country" comes out differently depending on what is counted — streams
+opened (`/v2/world/playoutIngest`, playout count), watch time
+(`/v2/world/playtime`, average playback time × unique playbacks) or traffic
+(`/v2/world/usage`, playout bytes). An audience that opens many short
+sessions ranks first by count, one that watches long sessions first by watch
+time. Traffic shares can also include non-audience playout, such as a
+studio monitoring its own streams from the ingest country. Always name the
+measure next to a share.
+
+## Monthly reports
+
+`interval=month` returns one value for the whole month on the quality routes
+(`/v2/h5live/latency`, `/startuptime`, `/bufferingratio`,
+`/v2/playback/start/success/ratio/timeseries`) — one call each. Not usable for
+monthly figures: `/v2/alerting/ingest`, which only covers the last 5 minutes.
+
+## Maximum range per query (temporary limits)
+
+**Temporary limits** — observed on API v2.34.x on 2026-10-14; they may be raised soon. The error body always names the current limit, so trust it over this table and re-check when it looks out of date.
+
+Several routes reject long ranges with HTTP 400 / error `101004` ("The time
+range is too long"). Observed on API v2.34.x: hourly concurrent viewers and the
+per-stream usage breakdown (playout *and* ingest) allow 7 days, the byte-usage timeseries 15 days;
+daily concurrent viewers accept 30 days; `/v2/world/usage` was verified at 15. Split the range
+into windows and aggregate client-side; the error body names the limit.
+
+The limits are inclusive maxima: a 16-day window is rejected by a 15-day
+route. A 31-day calendar month therefore does **not** fit into two halves —
+use three windows (or 7-day steps throughout).
+
+Over a 30-day range, `/v2/world/buffering/ratio` and
+`/v2/playback/start/success/ratio/world` were seen to return a truncated body
+(the connection closes early, so it is not valid JSON). Use shorter windows,
+or `format=csv`, for these two.
+
+Two cross-checks that are cheap and catch most mistakes: the per-stream
+breakdown summed over the same windows must reproduce the timeseries total;
+the world-map total comes out a few per cent *lower* than the timeseries,
+because traffic without a resolvable country is not on the map. Quote totals
+from the timeseries, shares from the map.
