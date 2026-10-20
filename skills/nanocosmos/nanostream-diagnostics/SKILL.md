@@ -3,7 +3,7 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.22.0
+  version: 2.22.1
   author: nanocosmos
   category: streaming-support
   updated: 2026-10-20
@@ -39,6 +39,7 @@ All take a stream name (`XXXXX-YYYYY`) as the first argument and work for stream
 | `get_stream_info.sh <name>` | no | CSV `<secure\|unsecure>,<live\|not live>,<raw state>` — playback-token security + platform state. Reads the public `GET /stream/<name>` route anonymously on purpose: the two fields it needs are always there, and a key of another organisation would get the request rejected |
 | `probe_stream_unsecure.sh <name>` | no | Real-media playback probe (ffprobe; parses via `parse_probe_output.py`). CSV `<gop_s>,<video_codec>,<profile>,<level>,<chroma>,<w>x<h>,<video_bitrate>,<audio_codec>,<audio_bitrate>` — pulls actual frames and reports the real keyframe interval plus what the encoder is really sending, not just its configured settings |
 | `probe_stream_secure.sh <name>` | yes | Same, for token-secured playback (mints a JWT internally) |
+| `record_rtmp_flv.sh [name] [seconds] [outdir]` | no | Records a public stream via RTMP pull with stream copy into an MP4 plus a full ffmpeg log (evidence for playback tickets). If this ffmpeg build rejects the FLV `OnTextData` tag, the log names the HTTPS-MP4 fallback command |
 | `get_stream_config.py <name>` / `get_stream_config.sh <name>` | optional | JSON: stream architecture — `type` (`single`/`group`/`daisy`), push destination, member profiles. Without a key it uses the public `GET /stream/<name>/group` route and warns on stderr, and retries keyless (with its own warning) when the configured key is rejected with 403, i.e. it belongs to a different organisation than the stream; `single`/`group` resolve fully, but old-style `daisy` chains cannot be identified (`/transcoding_profiles` needs a key) and are reported as `single` with an `rtmp://127.0.0.1/...` push URL plus a second warning |
 | `get_transcode_profiles.sh <name>` | yes | JSON: all transcoding profiles of the organisation |
 | `get_jwt_token.sh [name] [--days N \| --exp EPOCH]` | yes | Orga-wide playback JWT (for demo player / secure playback tests). Stream name is optional context only — token is orga-wide regardless. Default expiry 1 hour; `--days`/`--exp` mint a longer-lived one |

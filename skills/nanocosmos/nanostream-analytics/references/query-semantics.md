@@ -285,8 +285,12 @@ monthly figures: `/v2/alerting/ingest`, which only covers the last 5 minutes.
 Several routes reject long ranges with HTTP 400 / error `101004` ("The time
 range is too long"). Observed on API v2.34.x: hourly concurrent viewers and the
 per-stream usage breakdown (playout *and* ingest) allow 7 days, the byte-usage timeseries 15 days;
-daily concurrent viewers accept 30 days; `/v2/world/usage` was verified at 15. Split the range
-into windows and aggregate client-side; the error body names the limit.
+daily concurrent viewers accept 30 days; `/v2/world/usage` accepts at least 20
+(verified 2026-10-20; the usage limits were unchanged that day). Split the range
+into windows and aggregate client-side; the error body names the limit in its
+`summary` ("The time range is too long: the maximum time range duration is N
+days"). The same error code with "The 'from' query parameter is invalid" is a
+malformed date — typically a shell that did not word-split — not a range limit.
 
 The limits are inclusive maxima: a 16-day window is rejected by a 15-day
 route. A 31-day calendar month therefore does **not** fit into two halves —

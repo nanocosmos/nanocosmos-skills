@@ -6,7 +6,7 @@ metadata:
   version: 1.3.2
   author: nanocosmos
   category: analytics
-  updated: 2026-10-14
+  updated: 2026-10-20
 ---
 
 # nanoStream Analytics API
