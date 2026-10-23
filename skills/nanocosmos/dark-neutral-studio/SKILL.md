@@ -2,10 +2,10 @@
 name: dark-neutral-studio
 description: A portable product branding and UI styling skill for matte dark AV workbench interfaces with neutral graphite surfaces, deep brand-blue structure, and orange action accents.
 metadata:
-  version: 1.1.0
+  version: 1.1.1
   author: nanocosmos
   category: design
-  updated: 2026-09-04
+  updated: 2026-10-23
 ---
 
 # Dark Neutral Studio
@@ -18,9 +18,6 @@ The goal is not a flashy dark theme. The goal is a calm, durable, production-gra
 
 This skill's own color tokens (`--dns-*`, below) and font suggestion ("strong geometric sans if available") are for **portable, non-nanocosmos-branded** workbench UIs — client work, prototypes, or contexts with no existing brand system.
 
-**For any nanocosmos page — production, marketing, or demo, including everything on `web.pages.gitlab.nanocosmos.cloud` — the `nanocosmos-brand-guidelines` skill's tokens and fonts always take priority over this skill's, with no exception.** Never apply this skill's `:root` color block or font suggestion to a nanocosmos page, even a workbench-style one.
-
-The parts of this skill worth reusing on a nanocosmos page — the visual-hierarchy ordering (preview before status before controls before setup), the workbench grid layout, the monitor-surface treatment, and the tool-copy style rules — have already been adapted onto nanocosmos's own tokens in `nanocosmos-brand-guidelines/product-theme.css`, in its "AV workbench layout" section. Use that section instead; treat this skill, for nanocosmos work, as the origin of the layout idea only, not as a source of colors or fonts.
 
 ## Design Intent
 
