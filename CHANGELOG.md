@@ -5,7 +5,12 @@
 README: the install section now lists all four routes — Claude Code plugin,
 clone into `~/.claude/skills/`, `npx skills` / `gh skill`, and `install.sh` —
 with the matching update command for each. `nanostream-development` carries
-its changelog in `CHANGELOG.md` instead of `SKILL.md`.
+its changelog in `CHANGELOG.md` instead of `SKILL.md`. The plugin carries a
+listing icon in `.claude-plugin/icon.png`.
+
+- `nanostream-analytics` 1.3.2 → 1.3.3 — the duplicate generated code samples
+  (`Python + Python3`, `Csharp + Restsharp`) are removed from
+  `references/openapi_v2.json`; one sample per language remains.
 
 ## 2026-10-23 sync
 

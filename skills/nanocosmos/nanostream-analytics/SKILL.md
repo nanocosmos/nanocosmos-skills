@@ -3,7 +3,7 @@ name: "nanostream-analytics"
 description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login) or an expiring access token (NANO_API_TOKEN, recommended for services)."
 license: (c) nanocosmos
 metadata:
-  version: 1.3.2
+  version: 1.3.3
   author: nanocosmos
   category: analytics
   updated: 2026-10-20
