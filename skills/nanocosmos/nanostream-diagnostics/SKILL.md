@@ -3,10 +3,10 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.22.1
+  version: 2.23.0
   author: nanocosmos
   category: streaming-support
-  updated: 2026-10-20
+  updated: 2026-10-22
 ---
 
 # nanoStream Support & Diagnostics
@@ -45,6 +45,10 @@ All take a stream name (`XXXXX-YYYYY`) as the first argument and work for stream
 | `get_jwt_token.sh [name] [--days N \| --exp EPOCH]` | yes | Orga-wide playback JWT (for demo player / secure playback tests). Stream name is optional context only — token is orga-wide regardless. Default expiry 1 hour; `--days`/`--exp` mint a longer-lived one |
 | `create_access_token.sh [--days N] [--aud LIST] [--iss USER_ID] [--from-login]` | yes* | Expiring bintu/metrics ACCESS token via the Cloud Token Service (max 365 days). Best practice: use this wherever a credential leaves your shell (services, CI, dashboards) instead of the raw org API key — `x-bintu-token` header on the bintu API, `x-access-token` on the metrics API, `NANO_API_TOKEN` for the skill scripts. *`--from-login` mints from `NANOSTREAM_EMAIL`/`NANOSTREAM_PASSWORD` instead of the API key. Background: `references/nanostream-token-generation.md` |
 | `check_jwt_token.sh <jwt>` / `check_jwt_token.py <jwt>` | no | Decodes a playback JWT (no signature check) and prints its claims plus a VALID / EXPIRED / NOT-YET-VALID verdict. Exit 0 = valid, 1 = expired/not-yet-valid, 2 = malformed. Run before using any token from an example, ticket, or test page |
+| `setup_restream_captions.sh <source-stream> [...]` / `node setup_restream_captions.js <source-stream> [...]` | yes | **Restream + Live Captions + recording setup**, end to end (curl and fetch twins, same flow and env): per source stream creates a new low-latency stream in your organisation with `processing: [rec, replay]` (same payload as the captions-workflow page; retried without it on error code 1009 if recording isn't in the package, `NO_VOD=1` to skip), enables captions on it (`engine=deepgram`, `SOURCE_LANG`, `TARGET_LANGS` — defaults `en` → `de,pt-BR`; env-overridable, set BEFORE the first ingest), and starts a detached `relay_stream.sh` from the source's public RTMP playout into the new stream's ingest. Writes `<LOGDIR>/map.tsv` (source, id, target, pid, processing) and prints an orga-wide playback JWT at the end; replay afterwards at `https://bintu-vod.nanocosmos.de/vod/replay/<name>.m3u8`, transcripts at `…/transcript/<org>/<name>/<name>.<src>-<tgt>.vtt`. Needs a captions-enabled (= secure) organisation; `targetLanguages` must be a comma-separated STRING — the array form in the API guide returns HTTP 500 (verified 2026-10-21). Source streams must be publicly playable (unsecured). Stop relays with `pkill -f relay_stream.sh` |
+| `relay_stream.sh <source> <target> [--once]` | no | Restream one live stream into another with `ffmpeg -c copy` (audio untouched, so captions on the target transcribe the original), self-restarting, with `-rw_timeout` on both sockets — without it ffmpeg blocks forever on a dead TCP connection (seen after the relay host slept, 2026-10-22). `SRC_URL`/`DST_URL` override the default `bintu-play …/play/<source>` → `bintu-stream …/live/<target>` URLs (e.g. a token-secured source, or a `bintu-vtrans` target). Run with `nohup … &` |
+| `set_stream_captions.sh <name\|id> [source-lang] [target-langs]` | yes | Enable or update Live Captions on an EXISTING stream: `POST /stream/{id}/options` (falls back to `PUT` when the captions group already exists). Settings apply on the next ingest session — restart the encoder/relay |
+| `set_stream_processing.sh <name\|id> [features]` | yes | Enable Live Processing on an EXISTING stream (default `rec,replay`): `PUT /stream/{id}/processing` with `{"processing":[{"id":"rec"},{"id":"replay"}]}` — the only shape that works (POST → "Access denied", bare array → "Parameter required", `/opcode` → "Invalid Value"; verified 2026-10-22). Per stream, not per group; next session only |
 
 `secure`/`unsecure` refers to **playback JWT token security only** — it says nothing about RTMP ingest authentication.
 

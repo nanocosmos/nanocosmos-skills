@@ -64,7 +64,9 @@ curl --location 'https://token.nanostream.cloud/bintu/token' \
   --data '{"iss":"<user_id>","exp":<epoch_seconds>,"aud":["bintu","metrics"]}'
 ```
 
-- `iss` ("issuer") is the target user's **numeric user ID**, not their email or the org hash (the 5-character prefix used in stream names). Found in Dashboard → `My Organization` → `User Overview`.
+- `iss` ("issuer") is the target user's **internal user ID** — a string (the CTS reference shows a UUID), not their email or the org hash (the 5-character prefix used in stream names). Found in Dashboard → `My Organization` → `User Overview`.
+- **Without `iss` the token has full access** to every audience in `aud`, like the API key itself. Always set `iss` for a token that leaves your own hands.
+- **Without `aud` the token is valid for `bintu` only.** Valid values: `bintu`, `secure-conference`, `guardian`, `metrics`, `splay`.
 - The API key must belong to the org the user is a member of — an org-level credential does the minting, but the *resulting token* is still scoped to whatever role `iss` points to (e.g. a read-only user's ID still produces a read-only token) and to whichever `aud` entries were listed.
 - `aud` is an array — include only the audiences actually needed (e.g. `["metrics"]` alone for a metrics-only dashboard). See the API reference above for the full current list — don't guess at unconfirmed values.
 - If `exp` is omitted, it **defaults to 24 hours**, same as Method 1.
@@ -98,7 +100,7 @@ The response contains the token itself. Send it in the `x-bintu-token` header to
 ### Customer Response Guidance
 - Never recommend embedding an org-level API key in anything client-facing — steer toward one of these two token methods first.
 - Don't default to Method 2 just because it involves an API key header — Method 1 is the recommended default since it avoids handling a higher-privilege credential entirely.
-- Don't confuse `iss` (numeric user ID) with an org hash — different identifiers from different systems.
+- Don't confuse `iss` (internal user ID) with an org hash — different identifiers from different systems.
 - Never surface a real org hash, API key, token, or user ID from internal tickets/tooling in a customer-facing response — use generic placeholders only.
 
 ### Contact nanocosmos support when
