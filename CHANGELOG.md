@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-23 sync (2)
+
+README: the install section now lists all four routes — Claude Code plugin,
+clone into `~/.claude/skills/`, `npx skills` / `gh skill`, and `install.sh` —
+with the matching update command for each. `nanostream-development` carries
+its changelog in `CHANGELOG.md` instead of `SKILL.md`.
+
 ## 2026-10-23 sync
 
 Public home is now https://github.com/nanocosmos/nanocosmos-skills; the README

@@ -49,8 +49,19 @@ checks or platform-side monitoring, the skills say so and point you to
 
 ## Install
 
-**Claude Code — as a plugin (recommended).** One install, all five skills,
-updated together, invoked as `nanocosmos:<skill>`:
+Pick one route per machine — they all deliver the same five skills, and two
+routes side by side would load every skill twice.
+
+| Route | Best for | Invocation | Update |
+|---|---|---|---|
+| [Claude Code plugin](#1-claude-code-plugin-recommended) | Claude Code users | `nanocosmos:<skill>` | `claude plugin update` |
+| [Clone into your skills folder](#2-clone-into-your-skills-folder) | Claude Code users who want the sources at hand | `nanocosmos:<skill>` | `git pull` |
+| [`npx skills` / `gh skill`](#3-generic-skills-installers) | Cursor, Codex, Copilot, Windsurf, … and Claude Code | `<skill>` | `npx skills update` / `gh skill update` |
+| [`install.sh`](#4-installsh-manual-copy) | Picking individual skills by hand | `<skill>` | re-run `install.sh` |
+
+### 1. Claude Code plugin (recommended)
+
+One install, all five skills, updated together:
 
 ```bash
 claude plugin marketplace add nanocosmos/nanocosmos-skills
@@ -58,9 +69,42 @@ claude plugin install nanocosmos@nanocosmos
 ```
 
 Working from a local clone instead? `claude plugin marketplace add
-/path/to/nanocosmos-skills` does the same.
+/path/to/nanocosmos-skills` does the same. For everyone working in one
+repository, add `--scope project` to both commands and commit the
+`.claude/settings.json` they write.
 
-**Claude Code — individual skills** (per project or per user):
+### 2. Clone into your skills folder
+
+Claude Code loads any folder under its skills directory that carries a
+`.claude-plugin/plugin.json` as a plugin, so a plain clone is enough:
+
+```bash
+git clone https://github.com/nanocosmos/nanocosmos-skills.git ~/.claude/skills/nanocosmos-skills
+```
+
+The skills appear as `nanocosmos:<skill>` in the next session (or after
+`/reload-plugins`). Update with `git pull`. Inside one project, use a git
+submodule at `.claude/skills/nanocosmos-skills` instead; Claude Code asks you
+to trust the workspace once before loading it.
+
+### 3. Generic skills installers
+
+Both installers read the Agent Skills format and place the skills where your
+assistant expects them — Claude Code, Cursor, Codex, Copilot, Windsurf and
+others. Default scope is the current project; the flags shown install for
+every project.
+
+```bash
+npx skills add nanocosmos/nanocosmos-skills -g            # choose the agent interactively
+gh skill install nanocosmos/nanocosmos-skills --agent claude-code --scope user
+```
+
+Add `--skill <name>` (npx) or a skill name after the repo (gh) to install a
+single skill.
+
+### 4. `install.sh` (manual copy)
+
+A plain copy with no further tooling, for Claude Code's flat skills layout:
 
 ```bash
 git clone https://github.com/nanocosmos/nanocosmos-skills.git
@@ -70,9 +114,9 @@ cd nanocosmos-skills
 ./install.sh nanostream-development nanostream-diagnostics --project
 ```
 
-**Other assistants** (Cursor, Copilot, Windsurf, …): copy the desired
-`skills/nanocosmos/<name>/` folder into your tool's skills or rules directory,
-or point your assistant at the `SKILL.md` files directly.
+**Any other assistant:** copy the desired `skills/nanocosmos/<name>/` folder
+into your tool's skills or rules directory, or point your assistant at the
+`SKILL.md` files directly.
 
 ## First steps
 
@@ -92,13 +136,12 @@ or point your assistant at the `SKILL.md` files directly.
    how (`create_access_token.sh`).
 2. **Ask.** Start a session and ask a question from the list above, or say
    *"use the nanocosmos diagnostics skill to check stream XXXXX-YYYYY"*.
-3. **Update.** New syncs land on every push; pick them up with
+3. **Update.** New syncs land on every push; pick them up with the update
+   command of your install route (see the table above), for the plugin:
 
    ```bash
    claude plugin marketplace update nanocosmos && claude plugin update nanocosmos
    ```
-
-   (`git pull` for a clone; re-run `install.sh` for copied skills.)
 
 ## Requirements
 

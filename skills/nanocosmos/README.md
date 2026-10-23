@@ -3,10 +3,11 @@
 Each folder here is one AI-agent skill: `SKILL.md` is the entry point the
 assistant reads, `scripts/` are runnable tools, `references/` are on-demand
 knowledge files. For repo browsing the skills live under
-`skills/nanocosmos/<name>/`; the repo root's `install.sh` flattens each
-chosen skill to `<skills-root>/<name>/`, because Claude Code discovers
-skills only directly under the skills root and the folder name is the
-invocation name.
+`skills/nanocosmos/<name>/`; the plugin manifest in `.claude-plugin/` points
+Claude Code at them, and the generic installers or the repo root's
+`install.sh` flatten each chosen skill to `<skills-root>/<name>/` for tools
+that discover skills only directly under their skills root. The install
+routes are listed in the repository README.
 
 ## Which skill for which question
 

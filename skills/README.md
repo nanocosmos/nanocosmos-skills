@@ -7,7 +7,7 @@ lives under [`nanocosmos/`](nanocosmos/) — one folder per skill.
   prefilled ticket form): [`nanocosmos/README.md`](nanocosmos/README.md)
 - Install instructions and license: the [repository README](../README.md)
 
-Don't copy skills from this path by hand unless you have to — the repo
-root's `install.sh` flattens each chosen skill to `<skills-root>/<name>/`,
-which is where Claude Code discovers them (the folder name is the
-invocation name).
+Don't copy skills from this path by hand unless you have to — the
+repository README lists four install routes (Claude Code plugin, clone into
+your skills folder, `npx skills` / `gh skill`, or the repo root's
+`install.sh`, which flattens each chosen skill to `<skills-root>/<name>/`).
