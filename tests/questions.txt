@@ -1,0 +1,2 @@
+# Cross-skill questions (public tier). Format: id<TAB>prompt<TAB>expect<TAB>never — see tests/run.sh
+01	Which nanocosmos skills do you have? Reply with their exact names.	nanostream-(diagnostics|support)	-

@@ -1,0 +1,2 @@
+# nanoStudio — public tier.
+07	Walk me through a nanoStudio Chroma setup with two branded outputs from one green-screen feed.	chroma	staging host

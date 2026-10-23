@@ -1,0 +1,6 @@
+# nanoStream diagnostics/support — public tier (own-organisation API key, keyless routes). Format: see tests/run.sh
+02	Is stream HX26g-YVe8D live? Use the diagnostics scripts, do not guess.	\blive\b	-
+03	Measure the keyframe interval (GOP) of stream HX26g-YVe8D with the diagnostics scripts and report the value.	([0-9]+(\.[0-9]+)?) ?(s\b|sec|second)	-
+04	What is the stream architecture of HX26g-YVe8D: single stream, ABR group or daisy chain? Resolve it with the scripts.	group|ABR	cross-org
+08	My RTMP ingest is being rejected by the platform. What can you check for me, and what do you need from me?	support	\bSLA\b|ticket #[0-9]
+10	Where do my API keys go for these scripts?	\.env	-

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-24 sync
+
+- Every skill now carries `tests/questions.txt` — example questions with the
+  expected answer shape — and `tests/run.sh` at the repo root asks them all
+  through `claude -p` and checks the answers ("Try it yourself" in the README).
+- All scripts are executable again (the build had dropped the mode bit).
+- `dark-neutral-studio` 1.1.1 — no more pointer to a team-only skill.
+
 ## 2026-10-23 sync (2)
 
 README: the install section now lists all four routes — Claude Code plugin,

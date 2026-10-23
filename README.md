@@ -143,6 +143,34 @@ into your tool's skills or rules directory, or point your assistant at the
    claude plugin marketplace update nanocosmos && claude plugin update nanocosmos
    ```
 
+## Try it yourself
+
+Every skill ships a handful of test questions with the answer shape to expect
+(`skills/nanocosmos/<skill>/tests/questions.txt`), and `tests/run.sh` asks them
+all through `claude -p` and checks the answers:
+
+```bash
+tests/run.sh                 # from a clone; ~5 minutes, a few cents per question
+tests/run.sh --only 02,03    # a subset by question id or skill name
+tests/run.sh --list          # just show the questions
+# plugin install without a clone: the marketplace copy has the same files
+bash ~/.claude/plugins/marketplaces/nanocosmos/tests/run.sh
+```
+
+Or ask them yourself in a session and compare:
+
+| Ask | A good answer |
+|---|---|
+| *Is stream HX26g-YVe8D live?* | runs `get_stream_info.sh` and reports the state; never guesses |
+| *Measure the keyframe interval of HX26g-YVe8D.* | runs the probe and reports about 2 seconds plus codec and resolution |
+| *What was my organisation's buffering ratio yesterday?* | uses your dashboard login, states the UTC range and the scope, or tells you which credential is missing — no invented numbers |
+| *Give me a secure-playback nanoPlayer 5 config for nNCcf-nMhQY.* | a documented config with the demo token and a warning that the token expires |
+| *My ingest is being rejected — what can you check?* | self-serve checks first, then "contact support with these details" |
+
+Answers vary in wording; what matters is that the skill ran its scripts where
+it could and did not invent values. Found a wrong answer? Open an issue with
+the question and the answer file.
+
 ## Requirements
 
 - Your own nanocosmos account (trial accounts included): a **bintu API key**

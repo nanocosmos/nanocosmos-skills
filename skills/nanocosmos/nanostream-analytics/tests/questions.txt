@@ -1,0 +1,2 @@
+# nanoStream Analytics — public tier (own dashboard login / access token).
+05	What was my organisation's buffering ratio yesterday, per stream? Use the analytics skill with the configured credentials.	buffering	ANALYTICS_ORGA_HASH|query_admin|query_as_orga

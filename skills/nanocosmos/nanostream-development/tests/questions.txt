@@ -1,0 +1,2 @@
+# nanoStream development — public tier.
+06	Give me a complete nanoPlayer 5 config for secure playback of stream nNCcf-nMhQY, using the documented demo token.	nNCcf-nMhQY	-
