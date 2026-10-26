@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Print the parameters and description of an Analytics API route, read from the
-# bundled OpenAPI spec. No network, no credentials needed.
+# official OpenAPI spec. No credentials needed.
 #
 #   bash scripts/describe_endpoint.sh /v2/h5live/playtime/timeseries
 #   bash scripts/describe_endpoint.sh playtime            # substring search
@@ -11,9 +11,12 @@
 # Prints parameters AND the response shape, so you can see what a route returns
 # without spending a call to find out.
 #
-# Use this instead of guessing parameters — the spec is the source of truth and
-# is versioned with the skill (references/openapi_v2.json). It covers the
-# 77 customer-facing routes.
+# Use this instead of guessing parameters — the spec is the source of truth. It
+# is NOT bundled: the script downloads the official customer-facing spec from
+# the API docs host and caches it, so the route list is always the current one.
+#
+#   ANALYTICS_OPENAPI_URL   override the download URL
+#   ANALYTICS_OPENAPI_FILE  read this local file instead (pinned copy / offline)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,11 +24,40 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # PYTHON= pin in .env, if any) — the missing-credentials error is skipped.
 ENV_SH_OPTIONAL_CREDS=1
 source "${SCRIPT_DIR}/env.sh"
-SPEC="$(cd "${SCRIPT_DIR}/../references" && pwd)/openapi_v2.json"
+SPEC_URL="${ANALYTICS_OPENAPI_URL:-https://api.nanostream.cloud/docs/analytics/v2/openapi_v2.json}"
+CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/nanocosmos"
+SPEC="${ANALYTICS_OPENAPI_FILE:-${CACHE_DIR}/analytics-openapi_v2.json}"
 
-if [ ! -f "${SPEC}" ]; then
-  echo "error: spec not found at ${SPEC}" >&2
-  exit 1
+if [ -n "${ANALYTICS_OPENAPI_FILE:-}" ]; then
+  if [ ! -f "${SPEC}" ]; then
+    echo "error: spec not found at ${SPEC} (ANALYTICS_OPENAPI_FILE)" >&2
+    exit 1
+  fi
+else
+  # Conditional download: with a cached copy, -z sends If-Modified-Since and an
+  # unchanged spec costs one 304 and no transfer. A failed or offline fetch
+  # keeps the cached copy and says so; only "no network AND no cache" is fatal.
+  mkdir -p "${CACHE_DIR}"
+  TMP="${SPEC}.download"
+  COND=()
+  [ -f "${SPEC}" ] && COND=(-z "${SPEC}")
+  HTTP="$(curl -sS --max-time 20 "${COND[@]}" -o "${TMP}" -w '%{http_code}' "${SPEC_URL}" 2>/dev/null || true)"
+  HTTP="${HTTP:-000}"
+  if [ "${HTTP}" = "200" ] && [ -s "${TMP}" ] \
+     && "${PY}" -c 'import json, sys; json.load(open(sys.argv[1], encoding="utf-8"))' "${TMP}" 2>/dev/null; then
+    mv -f "${TMP}" "${SPEC}"
+  else
+    rm -f "${TMP}"
+    if [ "${HTTP}" != "304" ]; then
+      if [ -f "${SPEC}" ]; then
+        echo "note: could not refresh the spec from ${SPEC_URL} (HTTP ${HTTP}); using the cached copy" >&2
+      else
+        echo "error: could not download the spec from ${SPEC_URL} (HTTP ${HTTP}) and no cached copy exists" >&2
+        echo "hint: check network access, or set ANALYTICS_OPENAPI_FILE=<path to a downloaded openapi_v2.json>" >&2
+        exit 1
+      fi
+    fi
+  fi
 fi
 
 if [ $# -lt 1 ]; then

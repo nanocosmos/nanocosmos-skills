@@ -34,7 +34,7 @@ if [ -z "${PY:-}" ]; then
 fi
 
 # Force UTF-8 for file reads and stdio. On Windows the default locale encoding
-# is cp1252, and the bundled spec (references/openapi_v2.json) contains UTF-8
+# is cp1252, and the cached spec (fetched by describe_endpoint.sh) contains UTF-8
 # bytes it cannot decode — describe_endpoint.sh died with a UnicodeDecodeError
 # before this. Harmless on macOS/Linux, where UTF-8 is already the default.
 export PYTHONUTF8=1

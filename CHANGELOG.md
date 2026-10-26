@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-26 sync
+
+- `nanostream-analytics` 1.3.3 → 1.3.4 — the OpenAPI spec is no longer bundled.
+  `describe_endpoint.sh` fetches the official spec from
+  `https://api.nanostream.cloud/docs/analytics/v2/openapi_v2.json` and caches
+  it locally, so new routes appear without a skill update.
+
 ## 2026-10-24 sync
 
 - Every skill now carries `tests/questions.txt` — example questions with the

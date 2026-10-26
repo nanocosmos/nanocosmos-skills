@@ -3,7 +3,7 @@ name: "nanostream-analytics"
 description: "Query your own nanoStream Analytics metrics via the Analytics API v2 with your Analytics dashboard account: playtime, buffering ratio, latency, startup time, concurrent viewers, playback start success and errors, ingest monitoring (bitrate, SRT, RTMP, frame delay), byte usage, world-map breakdowns, alerts and Live Captions usage. Read-only — authenticates with ANALYTICS_EMAIL/ANALYTICS_PASSWORD (your dashboard login) or an expiring access token (NANO_API_TOKEN, recommended for services)."
 license: (c) nanocosmos
 metadata:
-  version: 1.3.3
+  version: 1.3.4
   author: nanocosmos
   category: analytics
   updated: 2026-10-20
@@ -70,7 +70,7 @@ You should not need to call it directly.
 | Script | Purpose |
 |---|---|
 | `scripts/query.sh <path> [key=value ...]` | Authenticated GET against any `/v2/...` read route. Repeat a key for array filters. Exits `3` when the API reports no data. |
-| `scripts/describe_endpoint.sh <path\|substring\|--list> [--example]` | Parameters, descriptions **and response shape** of any route, read from the bundled spec. No network, no credentials. |
+| `scripts/describe_endpoint.sh <path\|substring\|--list> [--example]` | Parameters, descriptions **and response shape** of any route, read from the official spec, fetched from the API docs host and cached locally. No credentials. |
 | `scripts/get_token.sh [--refresh]` | Prints a valid JWT, cached until shortly before expiry. Called automatically by `query.sh`. |
 | `scripts/whoami.sh` | Which account, which organisation, access level, token TTL. Run it first when a figure will be quoted. |
 | `scripts/env.sh` | Internal helper: loads `.env`, locates a working Python 3 (`PY`), exports the config. Sourced by the others. |
@@ -79,9 +79,11 @@ You should not need to call it directly.
 
 **Always run `describe_endpoint.sh` before composing a query for a route you
 have not used in this session.** Every route carries a full description,
-documented parameters and a response schema in the bundled spec
-(`references/openapi_v2.json`) — guessing a parameter name is never necessary
-and costs a wasted call.
+documented parameters and a response schema in the official spec, which the
+script fetches from `https://api.nanostream.cloud/docs/analytics/v2/openapi_v2.json`
+and caches under `~/.cache/nanocosmos/` (offline runs use the cached copy;
+`ANALYTICS_OPENAPI_FILE` pins a local file) — guessing a parameter name is
+never necessary and costs a wasted call.
 
 There are deliberately no per-endpoint wrappers. `query.sh` plus
 `describe_endpoint.sh` cover all routes without 77 scripts to maintain, and
@@ -240,7 +242,7 @@ The sandbox also needs network access to `metrics-api.nanostream.cloud` (and
 | Which route do I need? | `references/endpoints.md` |
 | What parameters does it take, what does it return? | `scripts/describe_endpoint.sh <path> [--example]` |
 | Why is my result empty / wrong / erroring? | `references/query-semantics.md` |
-| Full machine-readable spec | `references/openapi_v2.json` |
+| Full machine-readable spec | https://api.nanostream.cloud/docs/analytics/v2/openapi_v2.json — what `describe_endpoint.sh` fetches and caches |
 
 Rough map by question type:
 
