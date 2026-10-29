@@ -1,2 +1,3 @@
 # nanoStudio — public tier.
 07	Walk me through a nanoStudio Chroma setup with two branded outputs from one green-screen feed.	chroma	staging host
+08	How do I automate a chroma key setup with two brands through the API, and play one brand on a partner's page?	chroma_key	staging host

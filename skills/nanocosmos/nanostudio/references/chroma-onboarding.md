@@ -30,7 +30,7 @@ Questions about **nanoStudio Chroma**, the real-time cloud chroma-key and multi-
 - From that single ingest, multiple **branded targets (outputs)** are produced: each target gets its own background (MP4/PNG/JPG), optional PNG overlay with position/size, optional ABR transcode renditions, and is published under its **own unique stream ID and stream name**. Each operator/partner integrates their personalized stream via its player link or iframe/HTML snippet.
 - Keying runs inside the same ultra-low-latency transcoding pipeline every live stream already passes through — it adds no viewer-perceptible latency and delivers the same video quality as any other stream on the platform.
 - The default configuration supports **up to 15 outputs per channel**; higher counts are possible on request (may need a short provisioning lead time). There is no fixed concurrent-stream limit in the architecture — capacity is allocated per the number of Chroma channels in use.
-- **Everything available in the frontend is also available via the API**, so target creation and management can be fully automated.
+- **Everything available in the frontend is also available via the API**, so target creation and management can be fully automated. The calls, in order, are in `chroma-api.md`.
 - Streams created through nanoStudio carry a customizable `multichroma` tag, making them easy to find and manage in the nanoStream Dashboard.
 
 ### Getting started (Chroma Setup Tool)
@@ -64,4 +64,4 @@ Chroma is priced per channel with volume tiers — pricing questions and quotes 
 - More than 15 outputs per channel are needed (provisioning request)
 - Pricing, contract, or channel-volume questions — sales
 - Keying quality problems that Autotune + manual tuning don't resolve (may need engineering review of the source feed: lighting, screen uniformity, codec settings)
-- API automation questions beyond target creation basics
+- API automation questions beyond what `chroma-api.md` covers

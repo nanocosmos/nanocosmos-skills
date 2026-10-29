@@ -3,10 +3,10 @@ name: "nanostudio"
 description: "nanoStudio — nanocosmos's real-time production tools product line, working in combination with nanoStream delivery. Covers nanoStudio Chroma: server-side chroma-key and multi-brand compositing that sends branded live streams into nanoStream and to global destinations. Setup, branded outputs, keying, multi-operator security"
 license: (c) nanocosmos
 metadata:
-  version: 1.0.3
+  version: 1.1.0
   author: nanocosmos
   category: streaming-production
-  updated: 2026-08-24
+  updated: 2026-10-29
 ---
 
 # nanoStudio — Real-Time Production Tools
@@ -30,7 +30,7 @@ or doesn't exist.
 
 | Tool | What it does | Reference |
 |---|---|---|
-| **nanoStudio Chroma** | Real-time chroma-key and multi-brand compositing: one green/blue-screen feed in, multiple branded output streams (own background, overlay, ABR renditions) out — each a regular nanoStream stream per operator/partner | `references/chroma-onboarding.md` |
+| **nanoStudio Chroma** | Real-time chroma-key and multi-brand compositing: one green/blue-screen feed in, multiple branded output streams (own background, overlay, ABR renditions) out — each a regular nanoStream stream per operator/partner | `references/chroma-onboarding.md` (setup tool, onboarding), `references/chroma-api.md` (API automation, playing a brand) |
 
 ## Related skills
 

@@ -3,10 +3,10 @@ name: "nanostream-diagnostics"
 description: "Self-serve troubleshooting for nanoStream live streams with your own organisation API key: check whether a stream is really live, measure keyframe/GOP timing, resolve stream architecture (ABR groups, daisy chains, push targets), validate playback tokens, and diagnose ingest, playback, quality, latency, and player issues"
 license: (c) nanocosmos
 metadata:
-  version: 2.23.0
+  version: 2.28.0
   author: nanocosmos
   category: streaming-support
-  updated: 2026-10-22
+  updated: 2026-10-28
 ---
 
 # nanoStream Support & Diagnostics

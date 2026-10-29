@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-29 sync
+
+- `nanostudio` 1.0.3 → 1.1.0 — new `references/chroma-api.md`: automating a
+  nanoStudio Chroma setup through the API, in order (ingest stream, one stream
+  per brand, background and overlay upload, the `chroma_key` option, live
+  tuning, saving and adding or dropping a brand), and how a branded output is
+  played: one brand per page and player, by its stream group.
+- `nanostream-diagnostics` 2.28.0 — version stamp only.
+
 ## 2026-10-26 sync
 
 - `nanostream-analytics` 1.3.3 → 1.3.4 — the OpenAPI spec is no longer bundled.
